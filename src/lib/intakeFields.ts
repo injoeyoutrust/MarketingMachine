@@ -217,3 +217,22 @@ export function filledFieldCount(fields: IntakeFields): { filled: number; total:
   const filled = all.filter((f) => (fields[f.key] ?? "").trim().length > 0).length;
   return { filled, total: all.length };
 }
+
+// "Quick idea" mode skips the structured intake entirely — the user just
+// describes a rough concept and the engine extracts what it can, flagging
+// the rest. The idea gets stashed under this key inside a run's `fields`
+// blob (instead of the 24 question keys) so edit/regenerate can tell which
+// mode a saved run was built from.
+export const QUICK_IDEA_KEY = "__quickIdea";
+
+export function composeQuickIdeaText(idea: string): string {
+  return `## Quick ad idea (informal — not a completed intake)
+
+${idea.trim()}
+
+This is a rough concept, not a filled-out intake form. Extract whatever you
+genuinely can from it (voice, angle, audience, the core hook) and put
+everything else — proof numbers, business name, pricing, case-study
+results, anything that isn't stated or clearly implied above — on the flag
+sheet instead of inventing it.`;
+}

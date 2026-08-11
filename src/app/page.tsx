@@ -2,13 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { IntakeForm } from "@/components/IntakeForm";
+import { IntakeForm, type IntakeMode } from "@/components/IntakeForm";
 import { StyleSelector } from "@/components/StyleSelector";
 import { StyleLibrary } from "@/components/StyleLibrary";
 import { ResultsTabs } from "@/components/ResultsTabs";
 import { loadRuns, saveRun, deleteRun } from "@/lib/storage";
 import { loadStyles } from "@/lib/styleStorage";
-import { emptyIntakeFields, composeIntakeText, type IntakeFields } from "@/lib/intakeFields";
+import {
+  emptyIntakeFields,
+  composeIntakeText,
+  composeQuickIdeaText,
+  QUICK_IDEA_KEY,
+  type IntakeFields,
+} from "@/lib/intakeFields";
 import type { SavedRun } from "@/lib/types";
 import type { Style } from "@/lib/styleLibrary";
 
@@ -33,6 +39,8 @@ export default function Home() {
   const [stage, setStage] = useState<Stage>("form");
 
   const [label, setLabel] = useState("");
+  const [mode, setMode] = useState<IntakeMode>("quick");
+  const [quickIdea, setQuickIdea] = useState("");
   const [fields, setFields] = useState<IntakeFields>(() => emptyIntakeFields());
   const [selectedAngleIds, setSelectedAngleIds] = useState<string[]>(DEFAULT_ANGLE_IDS);
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(DEFAULT_FUNNEL_ID);
@@ -62,6 +70,8 @@ export default function Home() {
     setActiveId(null);
     setStage("form");
     setLabel("");
+    setMode("quick");
+    setQuickIdea("");
     setFields(emptyIntakeFields());
     setError(null);
   }
@@ -82,7 +92,15 @@ export default function Home() {
     setActiveId(null);
     setStage("form");
     setLabel(run.label);
-    setFields({ ...emptyIntakeFields(), ...run.fields });
+    if (run.fields[QUICK_IDEA_KEY]) {
+      setMode("quick");
+      setQuickIdea(run.fields[QUICK_IDEA_KEY]);
+      setFields(emptyIntakeFields());
+    } else {
+      setMode("full");
+      setQuickIdea("");
+      setFields({ ...emptyIntakeFields(), ...run.fields });
+    }
     const matchedAngleIds = styles
       .filter((s) => s.category === "adAngle" && run.adAngleNames.includes(s.name))
       .map((s) => s.id);
@@ -114,6 +132,10 @@ export default function Home() {
   }
 
   async function handleGenerate() {
+    if (mode === "quick" && quickIdea.trim().length < 10) {
+      setError("Give it a bit more than that — a sentence or two is enough.");
+      return;
+    }
     if (selectedAngleIds.length === 0) {
       setError("Select at least one ad angle.");
       return;
@@ -127,7 +149,8 @@ export default function Home() {
       return;
     }
 
-    const intake = composeIntakeText(fields);
+    const intake = mode === "quick" ? composeQuickIdeaText(quickIdea) : composeIntakeText(fields);
+    const savedFields = mode === "quick" ? { [QUICK_IDEA_KEY]: quickIdea.trim() } : fields;
     const adAngles = selectedAngleIds
       .map((id) => styles.find((s) => s.id === id))
       .filter((s): s is Style => Boolean(s));
@@ -151,7 +174,7 @@ export default function Home() {
       const saved = await saveRun({
         label: label.trim() || "Untitled campaign",
         intake,
-        fields,
+        fields: savedFields,
         adAngleNames: adAngles.map((a) => a.name),
         funnelStyleName: funnelStyle?.name ?? "",
         vslStyleName: vslStyle?.name ?? "",
@@ -224,10 +247,14 @@ export default function Home() {
             </div>
           ) : stage === "form" ? (
             <IntakeForm
+              mode={mode}
+              onModeChange={setMode}
               label={label}
               onLabelChange={setLabel}
               fields={fields}
               onFieldChange={handleFieldChange}
+              quickIdea={quickIdea}
+              onQuickIdeaChange={setQuickIdea}
               onSubmit={handleContinueToStyles}
               loading={false}
               error={error}

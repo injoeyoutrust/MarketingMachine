@@ -45,9 +45,15 @@ and action have to be re-worded every time.
 
 ## How it works
 
-1. **Fill the intake** — 24 fields grouped into sections (Business, Offer,
-   Avatar, Market Language, Brand Voice, Goals). Blank fields don't get
-   invented around; they show up on the flag sheet instead.
+1. **Fill the intake** — two modes, toggled at the top of the form:
+   - **Quick idea** — type a sentence or two describing the ad concept and
+     go. Fastest path; the engine extracts what it can and flags the rest
+     (proof numbers, offer name, pricing — anything it can't know) instead
+     of inventing plausible-sounding facts.
+   - **Full intake** — 24 fields grouped into sections (Business, Offer,
+     Avatar, Market Language, Brand Voice, Goals). More input, fewer flags.
+   Either way, blank fields don't get invented around; they show up on the
+   flag sheet instead.
 2. **Choose styles** — pick as many Ad Copy / Video Ad Copy angles as you
    want (one ad set gets written per angle selected), one Funnel Copy style
    to shape the opt-in and thank-you pages, and one VSL style for the
