@@ -85,7 +85,11 @@ export async function POST(req: NextRequest) {
   ];
 
   try {
-    const message = await client.messages.create({
+    // Streamed rather than a single blocking call: with several angles
+    // selected, max_tokens climbs high enough that the SDK requires
+    // streaming (it refuses non-streaming requests it estimates could run
+    // past ~10 minutes). We still just want the final assembled message.
+    const stream = client.messages.stream({
       model: "claude-sonnet-5",
       max_tokens: computeMaxTokens(adAngles.length),
       system: CAMPAIGN_ENGINE_SYSTEM_PROMPT,
@@ -93,6 +97,8 @@ export async function POST(req: NextRequest) {
       tool_choice: { type: "tool", name: "deliver_campaign_kit" },
       messages: [{ role: "user", content: userContent }],
     });
+
+    const message = await stream.finalMessage();
 
     const toolUse = message.content.find(
       (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
