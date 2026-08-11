@@ -45,19 +45,25 @@ and action have to be re-worded every time.
 
 ## How it works
 
-1. **Fill the intake** — two modes, toggled at the top of the form:
-   - **Quick idea** — type a sentence or two describing the ad concept and
-     go. Fastest path; the engine extracts what it can and flags the rest
-     (proof numbers, offer name, pricing — anything it can't know) instead
-     of inventing plausible-sounding facts.
+1. **Fill the intake** — three modes, toggled at the top of the form:
+   - **Quick idea** — type a sentence or two describing the ad concept, then
+     pick angles/funnel/VSL style same as full intake. The engine extracts
+     what it can and flags the rest (proof numbers, offer name, pricing —
+     anything it can't know) instead of inventing plausible-sounding facts.
+   - **Pure push** — one click, all the way through. Your concept skips
+     angle selection entirely and becomes the campaign's one and only
+     angle — the model's job is to fit it into Hook/Mirror/Shift/Proof/CTA
+     as faithfully as possible, not remap it onto a library technique. Uses
+     the default funnel/VSL style so there's no second screen.
    - **Full intake** — 24 fields grouped into sections (Business, Offer,
      Avatar, Market Language, Brand Voice, Goals). More input, fewer flags.
-   Either way, blank fields don't get invented around; they show up on the
+   Every mode: blank fields don't get invented around; they show up on the
    flag sheet instead.
-2. **Choose styles** — pick as many Ad Copy / Video Ad Copy angles as you
-   want (one ad set gets written per angle selected), one Funnel Copy style
-   to shape the opt-in and thank-you pages, and one VSL style for the
-   centerpiece video (used only if the funnel style actually includes one).
+2. **Choose styles** (Quick idea / Full intake only — Pure push skips this) —
+   pick as many Ad Copy / Video Ad Copy angles as you want (one ad set gets
+   written per angle selected), one Funnel Copy style to shape the opt-in
+   and thank-you pages, and one VSL style for the centerpiece video (used
+   only if the funnel style actually includes one).
 3. **Generate** — the server route at `src/app/api/generate/route.ts` sends
    the intake plus an ANGLE BRIEF, FUNNEL BRIEF, and VSL BRIEF to Claude,
    forcing a structured tool call (`deliver_campaign_kit`) so the response

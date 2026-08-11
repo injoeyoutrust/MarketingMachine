@@ -236,3 +236,28 @@ everything else — proof numbers, business name, pricing, case-study
 results, anything that isn't stated or clearly implied above — on the flag
 sheet instead of inventing it.`;
 }
+
+// "Pure push" mode: the user's own concept IS the angle — no library angle
+// gets picked or substituted. Stashed under this key in a run's `fields`
+// blob, same pattern as QUICK_IDEA_KEY, so edit/regenerate restores the
+// right mode.
+export const PURE_PUSH_KEY = "__purePush";
+
+export function composePurePushText(idea: string): string {
+  return `## Ad concept — execute directly, do not reinterpret
+
+${idea.trim()}
+
+This concept is the campaign's one and only angle. Do not map it onto a
+different named technique and do not soften or generalize it. Your job is
+to fit THIS exact idea into the five-beat structure (Hook, Mirror, Shift,
+Proof, CTA) as faithfully as possible. Extract what facts you genuinely can
+from it; anything it doesn't state — proof numbers, business name, pricing
+— goes on the flag sheet instead of being invented.`;
+}
+
+export function purePushAngleName(idea: string): string {
+  const firstLine = idea.trim().split(/\n/)[0].trim();
+  const words = firstLine.split(/\s+/).slice(0, 6).join(" ");
+  return words.length < firstLine.length ? `${words}…` : words || "Your concept";
+}

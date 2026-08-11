@@ -12,10 +12,13 @@ import {
   emptyIntakeFields,
   composeIntakeText,
   composeQuickIdeaText,
+  composePurePushText,
+  purePushAngleName,
   QUICK_IDEA_KEY,
+  PURE_PUSH_KEY,
   type IntakeFields,
 } from "@/lib/intakeFields";
-import type { SavedRun } from "@/lib/types";
+import type { SavedRun, CampaignKit } from "@/lib/types";
 import type { Style } from "@/lib/styleLibrary";
 
 const DEFAULT_ANGLE_IDS = [
@@ -41,6 +44,7 @@ export default function Home() {
   const [label, setLabel] = useState("");
   const [mode, setMode] = useState<IntakeMode>("quick");
   const [quickIdea, setQuickIdea] = useState("");
+  const [purePushIdea, setPurePushIdea] = useState("");
   const [fields, setFields] = useState<IntakeFields>(() => emptyIntakeFields());
   const [selectedAngleIds, setSelectedAngleIds] = useState<string[]>(DEFAULT_ANGLE_IDS);
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(DEFAULT_FUNNEL_ID);
@@ -72,6 +76,7 @@ export default function Home() {
     setLabel("");
     setMode("quick");
     setQuickIdea("");
+    setPurePushIdea("");
     setFields(emptyIntakeFields());
     setError(null);
   }
@@ -92,13 +97,20 @@ export default function Home() {
     setActiveId(null);
     setStage("form");
     setLabel(run.label);
-    if (run.fields[QUICK_IDEA_KEY]) {
+    if (run.fields[PURE_PUSH_KEY]) {
+      setMode("push");
+      setPurePushIdea(run.fields[PURE_PUSH_KEY]);
+      setQuickIdea("");
+      setFields(emptyIntakeFields());
+    } else if (run.fields[QUICK_IDEA_KEY]) {
       setMode("quick");
       setQuickIdea(run.fields[QUICK_IDEA_KEY]);
+      setPurePushIdea("");
       setFields(emptyIntakeFields());
     } else {
       setMode("full");
       setQuickIdea("");
+      setPurePushIdea("");
       setFields({ ...emptyIntakeFields(), ...run.fields });
     }
     const matchedAngleIds = styles
@@ -131,6 +143,56 @@ export default function Home() {
     setStage("styles");
   }
 
+  async function runGenerate(params: {
+    intake: string;
+    savedFields: IntakeFields;
+    adAngles: Style[];
+    funnelStyle: Style;
+    vslStyle: Style;
+  }) {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intake: params.intake,
+          adAngles: params.adAngles,
+          funnelStyle: params.funnelStyle,
+          vslStyle: params.vslStyle,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Something went wrong generating the kit.");
+        return;
+      }
+
+      const kit = data.kit as CampaignKit;
+      const saved = await saveRun({
+        label: label.trim() || "Untitled campaign",
+        intake: params.intake,
+        fields: params.savedFields,
+        adAngleNames: params.adAngles.map((a) => a.name),
+        funnelStyleName: params.funnelStyle.name,
+        vslStyleName: params.vslStyle.name,
+        kit,
+      });
+      if (!saved) {
+        setError("Kit was generated but couldn't be saved. Check the Supabase connection.");
+        return;
+      }
+      setRuns(await loadRuns());
+      setActiveId(saved.id);
+      setStage("form");
+    } catch {
+      setError("Network error reaching the server. Is the dev server running?");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleGenerate() {
     if (mode === "quick" && quickIdea.trim().length < 10) {
       setError("Give it a bit more than that — a sentence or two is enough.");
@@ -154,44 +216,46 @@ export default function Home() {
     const adAngles = selectedAngleIds
       .map((id) => styles.find((s) => s.id === id))
       .filter((s): s is Style => Boolean(s));
-    const funnelStyle = styles.find((s) => s.id === selectedFunnelId) ?? null;
-    const vslStyle = styles.find((s) => s.id === selectedVslId) ?? null;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ intake, adAngles, funnelStyle, vslStyle }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Something went wrong generating the kit.");
-        return;
-      }
-
-      const saved = await saveRun({
-        label: label.trim() || "Untitled campaign",
-        intake,
-        fields: savedFields,
-        adAngleNames: adAngles.map((a) => a.name),
-        funnelStyleName: funnelStyle?.name ?? "",
-        vslStyleName: vslStyle?.name ?? "",
-        kit: data.kit,
-      });
-      if (!saved) {
-        setError("Kit was generated but couldn't be saved. Check the Supabase connection.");
-        return;
-      }
-      setRuns(await loadRuns());
-      setActiveId(saved.id);
-      setStage("form");
-    } catch {
-      setError("Network error reaching the server. Is the dev server running?");
-    } finally {
-      setLoading(false);
+    const funnelStyle = styles.find((s) => s.id === selectedFunnelId);
+    const vslStyle = styles.find((s) => s.id === selectedVslId);
+    if (!funnelStyle || !vslStyle) {
+      setError("Couldn't find the selected funnel/VSL style. Try picking it again.");
+      return;
     }
+
+    await runGenerate({ intake, savedFields, adAngles, funnelStyle, vslStyle });
+  }
+
+  async function handlePurePush() {
+    if (purePushIdea.trim().length < 10) {
+      setError("Give it a bit more than that — write out the actual concept.");
+      return;
+    }
+
+    const defaultFunnel = styles.find((s) => s.id === DEFAULT_FUNNEL_ID);
+    const defaultVsl = styles.find((s) => s.id === DEFAULT_VSL_ID);
+    if (!defaultFunnel || !defaultVsl) {
+      setError("Default funnel/VSL styles are missing from the library. Check the Style library.");
+      return;
+    }
+
+    const idea = purePushIdea.trim();
+    const customAngle: Style = {
+      id: "pure-push",
+      category: "adAngle",
+      name: purePushAngleName(idea),
+      description: idea,
+      builtIn: false,
+      examples: [],
+    };
+
+    await runGenerate({
+      intake: composePurePushText(idea),
+      savedFields: { [PURE_PUSH_KEY]: idea },
+      adAngles: [customAngle],
+      funnelStyle: defaultFunnel,
+      vslStyle: defaultVsl,
+    });
   }
 
   if (initializing) {
@@ -255,8 +319,11 @@ export default function Home() {
               onFieldChange={handleFieldChange}
               quickIdea={quickIdea}
               onQuickIdeaChange={setQuickIdea}
+              purePushIdea={purePushIdea}
+              onPurePushIdeaChange={setPurePushIdea}
               onSubmit={handleContinueToStyles}
-              loading={false}
+              onPurePush={handlePurePush}
+              loading={mode === "push" ? loading : false}
               error={error}
             />
           ) : (
