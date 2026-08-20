@@ -1,6 +1,6 @@
 "use client";
 
-import type { Style } from "@/lib/styleLibrary";
+import { sortEmotionStyles, type Style } from "@/lib/styleLibrary";
 
 function StyleOption({
   style,
@@ -82,7 +82,7 @@ export function StyleSelector({
   const angles = styles.filter((s) => s.category === "adAngle");
   const funnels = styles.filter((s) => s.category === "funnelStyle");
   const vslStyles = styles.filter((s) => s.category === "vslStyle");
-  const emotions = styles.filter((s) => s.category === "emotionalTone");
+  const emotions = sortEmotionStyles(styles.filter((s) => s.category === "emotionalTone"));
 
   return (
     <div className="mx-auto max-w-3xl pb-16">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { Style, StyleCategory, StyleExample } from "@/lib/styleLibrary";
+import { sortEmotionStyles, type Style, type StyleCategory, type StyleExample } from "@/lib/styleLibrary";
 import { addExample, addStyle, deleteStyle, removeExample } from "@/lib/styleStorage";
 
 const CATEGORY_NOUN: Record<StyleCategory, string> = {
@@ -254,7 +254,10 @@ function NewStyleForm({ category, onAdded }: { category: StyleCategory; onAdded:
 
 export function StyleLibrary({ styles, onChanged }: { styles: Style[]; onChanged: () => void }) {
   const [tab, setTab] = useState<StyleCategory>("adAngle");
-  const filtered = styles.filter((s) => s.category === tab);
+  const filtered =
+    tab === "emotionalTone"
+      ? sortEmotionStyles(styles.filter((s) => s.category === tab))
+      : styles.filter((s) => s.category === tab);
 
   return (
     <div className="mx-auto max-w-3xl pb-16">
