@@ -1,6 +1,7 @@
 "use client";
 
 import { INTAKE_SECTIONS, filledFieldCount, type IntakeFields } from "@/lib/intakeFields";
+import { sortEmotionStyles, type Style } from "@/lib/styleLibrary";
 
 export type IntakeMode = "quick" | "full" | "push";
 
@@ -57,10 +58,17 @@ function QuickIdeaPanel({
 function PurePushPanel({
   idea,
   onIdeaChange,
+  emotionStyles,
+  emotionId,
+  onEmotionChange,
 }: {
   idea: string;
   onIdeaChange: (v: string) => void;
+  emotionStyles: Style[];
+  emotionId: string;
+  onEmotionChange: (id: string) => void;
 }) {
+  const sortedEmotions = sortEmotionStyles(emotionStyles);
   return (
     <div className="mt-5 rounded-xl border border-indigo-200 bg-indigo-50/40 p-5 dark:border-indigo-900 dark:bg-indigo-950/20">
       <label className="block text-sm font-medium text-neutral-800 dark:text-neutral-200">
@@ -78,6 +86,30 @@ function PurePushPanel({
         placeholder="Write out the concept as fully as you want — a hook line, the tension, why it's true, what makes it click. The more specific, the closer the output matches what's in your head."
         className="mt-2 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-indigo-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
       />
+
+      {sortedEmotions.length > 0 && (
+        <div className="mt-3">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            Emotional tone (optional)
+          </label>
+          <p className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
+            If set, the whole ad gets written from inside that one state. Leave it off and the concept
+            speaks for itself with no assigned tone.
+          </p>
+          <select
+            value={emotionId}
+            onChange={(e) => onEmotionChange(e.target.value)}
+            className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-none focus:border-indigo-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200"
+          >
+            <option value="">No emotional tone — concept only</option>
+            {sortedEmotions.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }
@@ -93,6 +125,9 @@ export function IntakeForm({
   onQuickIdeaChange,
   purePushIdea,
   onPurePushIdeaChange,
+  emotionStyles,
+  purePushEmotionId,
+  onPurePushEmotionChange,
   onSubmit,
   onPurePush,
   loading,
@@ -108,6 +143,9 @@ export function IntakeForm({
   onQuickIdeaChange: (v: string) => void;
   purePushIdea: string;
   onPurePushIdeaChange: (v: string) => void;
+  emotionStyles: Style[];
+  purePushEmotionId: string;
+  onPurePushEmotionChange: (id: string) => void;
   onSubmit: () => void;
   onPurePush: () => void;
   loading: boolean;
@@ -193,7 +231,15 @@ export function IntakeForm({
       )}
 
       {mode === "quick" && <QuickIdeaPanel idea={quickIdea} onIdeaChange={onQuickIdeaChange} />}
-      {mode === "push" && <PurePushPanel idea={purePushIdea} onIdeaChange={onPurePushIdeaChange} />}
+      {mode === "push" && (
+        <PurePushPanel
+          idea={purePushIdea}
+          onIdeaChange={onPurePushIdeaChange}
+          emotionStyles={emotionStyles}
+          emotionId={purePushEmotionId}
+          onEmotionChange={onPurePushEmotionChange}
+        />
+      )}
       {mode === "full" &&
         INTAKE_SECTIONS.map((section) => (
           <div key={section.title} className="mt-8">

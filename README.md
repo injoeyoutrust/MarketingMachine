@@ -54,7 +54,9 @@ and action have to be re-worded every time.
      angle selection entirely and becomes the campaign's one and only
      angle — the model's job is to fit it into Hook/Mirror/Shift/Proof/CTA
      as faithfully as possible, not remap it onto a library technique. Uses
-     the default funnel/VSL style so there's no second screen.
+     the default funnel/VSL style so there's no second screen. An optional
+     emotional-tone dropdown sits right in this panel (defaults to none —
+     the concept speaks for itself unless you pick one).
    - **Full intake** — 24 fields grouped into sections (Business, Offer,
      Avatar, Market Language, Brand Voice, Goals). More input, fewer flags.
    Every mode: blank fields don't get invented around; they show up on the

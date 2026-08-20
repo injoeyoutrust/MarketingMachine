@@ -56,10 +56,13 @@ function describeAngleEmotions(run: SavedRun, styles: Style[]): string[] {
   const map = decodeAngleEmotions(run.fields[ANGLE_EMOTIONS_KEY]);
   return Object.entries(map)
     .map(([angleId, emotionId]) => {
-      const angle = styles.find((s) => s.id === angleId);
+      // The pure-push angle is synthesized on the fly and never saved to
+      // the style catalog, so it won't be found by id — fall back to the
+      // run's recorded angle name (there's only ever one for a push run).
+      const angleName = angleId === "pure-push" ? run.adAngleNames[0] : styles.find((s) => s.id === angleId)?.name;
       const emotion = styles.find((s) => s.id === emotionId);
-      if (!angle) return null;
-      return emotion ? `${angle.name} (${stripEmotionPoints(emotion.name)})` : angle.name;
+      if (!angleName) return null;
+      return emotion ? `${angleName} (${stripEmotionPoints(emotion.name)})` : angleName;
     })
     .filter((s): s is string => Boolean(s));
 }
@@ -180,7 +183,14 @@ export default function Home() {
   }
 
   function setAngleEmotion(angleId: string, emotionId: string) {
-    setAngleEmotionIds((prev) => ({ ...prev, [angleId]: emotionId }));
+    setAngleEmotionIds((prev) => {
+      if (!emotionId) {
+        const next = { ...prev };
+        delete next[angleId];
+        return next;
+      }
+      return { ...prev, [angleId]: emotionId };
+    });
   }
 
   function handleContinueToStyles() {
@@ -295,7 +305,7 @@ export default function Home() {
     }
 
     const idea = purePushIdea.trim();
-    const customAngle: Style = {
+    const rawAngle: Style = {
       id: "pure-push",
       category: "adAngle",
       name: purePushAngleName(idea),
@@ -303,10 +313,17 @@ export default function Home() {
       builtIn: false,
       examples: [],
     };
+    const purePushEmotion = styles.find((s) => s.id === angleEmotionIds["pure-push"]);
+    const customAngle = withEmotion(rawAngle, purePushEmotion);
+
+    const savedFields: IntakeFields = { [PURE_PUSH_KEY]: idea };
+    if (purePushEmotion) {
+      savedFields[ANGLE_EMOTIONS_KEY] = encodeAngleEmotions({ "pure-push": purePushEmotion.id });
+    }
 
     await runGenerate({
       intake: composePurePushText(idea),
-      savedFields: { [PURE_PUSH_KEY]: idea },
+      savedFields,
       adAngles: [customAngle],
       funnelStyle: defaultFunnel,
       vslStyle: defaultVsl,
@@ -377,6 +394,9 @@ export default function Home() {
               onQuickIdeaChange={setQuickIdea}
               purePushIdea={purePushIdea}
               onPurePushIdeaChange={setPurePushIdea}
+              emotionStyles={styles.filter((s) => s.category === "emotionalTone")}
+              purePushEmotionId={angleEmotionIds["pure-push"] ?? ""}
+              onPurePushEmotionChange={(id) => setAngleEmotion("pure-push", id)}
               onSubmit={handleContinueToStyles}
               onPurePush={handlePurePush}
               loading={mode === "push" ? loading : false}

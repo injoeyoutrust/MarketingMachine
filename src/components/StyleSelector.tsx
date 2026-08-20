@@ -129,6 +129,7 @@ export function StyleSelector({
                     onClick={(e) => e.stopPropagation()}
                     className="mt-1 w-full rounded border border-neutral-300 bg-white px-2 py-1 text-xs text-neutral-800 outline-none focus:border-indigo-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200"
                   >
+                    <option value="">No emotional tone — angle description only</option>
                     {emotions.map((e) => (
                       <option key={e.id} value={e.id}>
                         {e.name}
