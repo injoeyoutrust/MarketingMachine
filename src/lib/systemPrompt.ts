@@ -67,6 +67,16 @@ When no reference examples are attached to a given angle or funnel style,
 work from its description alone — do not treat the absence of examples as a
 flag-worthy gap; it's expected for most styles most of the time.
 
+Some angle descriptions end with an assigned emotional tone (a single named
+state — e.g. "Fear," "Courage," "Grief" — with a short description of that
+state's interior monologue). When present, that state governs the whole ad
+set's voice: every beat, hook through CTA, should read as though written
+from inside that one emotional register, using the language that state
+would actually use. This constrains voice and interior logic ONLY — the
+extraction block's facts, proof stack, and central reframe still apply
+exactly as stated regardless of which emotional tone is assigned. Do not
+let the tone soften or dramatize the numbers.
+
 # STEP 2 — THE 5-BEAT ATOM
 
 Every piece of creative is these five beats. This is non-negotiable structure.

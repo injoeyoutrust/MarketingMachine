@@ -261,3 +261,24 @@ export function purePushAngleName(idea: string): string {
   const words = firstLine.split(/\s+/).slice(0, 6).join(" ");
   return words.length < firstLine.length ? `${words}…` : words || "Your concept";
 }
+
+// One emotional-tone style id per selected ad angle id — lets each ad in the
+// set carry its own single emotion (e.g. Identity mirror @ Fear, Cost of
+// inaction @ Grief) rather than one tone for the whole kit. Stashed in a
+// run's `fields` blob, keyed by stable style ids (not names) so it survives
+// edits to a style's wording and restores cleanly on Edit & regenerate.
+export const ANGLE_EMOTIONS_KEY = "__angleEmotions";
+
+export function encodeAngleEmotions(map: Record<string, string>): string {
+  return JSON.stringify(map);
+}
+
+export function decodeAngleEmotions(raw: string | undefined): Record<string, string> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return typeof parsed === "object" && parsed !== null ? parsed : {};
+  } catch {
+    return {};
+  }
+}

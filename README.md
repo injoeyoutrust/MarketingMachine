@@ -61,9 +61,10 @@ and action have to be re-worded every time.
    flag sheet instead.
 2. **Choose styles** (Quick idea / Full intake only — Pure push skips this) —
    pick as many Ad Copy / Video Ad Copy angles as you want (one ad set gets
-   written per angle selected), one Funnel Copy style to shape the opt-in
-   and thank-you pages, and one VSL style for the centerpiece video (used
-   only if the funnel style actually includes one).
+   written per angle selected), an **emotional tone per angle** (each ad can
+   carry its own single emotional register — see below), one Funnel Copy
+   style to shape the opt-in and thank-you pages, and one VSL style for the
+   centerpiece video (used only if the funnel style actually includes one).
 3. **Generate** — the server route at `src/app/api/generate/route.ts` sends
    the intake plus an ANGLE BRIEF, FUNNEL BRIEF, and VSL BRIEF to Claude,
    forcing a structured tool call (`deliver_campaign_kit`) so the response
@@ -74,11 +75,27 @@ and action have to be re-worded every time.
 
 ### Style library
 
-Click **🎨 Style library** in the sidebar to manage three catalogs:
+Click **🎨 Style library** in the sidebar to manage four catalogs:
 
 - 12 built-in ad angles (Identity mirror, Failed-alternative mirror,
-  Myth-buster, Cost of inaction, plus 8 more), 10 built-in funnel styles, and
-  10 built-in VSL styles ship pre-seeded — see `src/lib/styleLibrary.ts`.
+  Myth-buster, Cost of inaction, plus 8 more), 10 built-in funnel styles, 10
+  built-in VSL styles, and 17 built-in emotional-tone states ship pre-seeded
+  — see `src/lib/styleLibrary.ts`.
+
+### Emotional tone (per ad angle)
+
+Each ad angle you select in step 2 gets its own emotional-tone dropdown —
+one of 17 states adapted from David Hawkins' Map of Consciousness (Shame
+through Enlightenment; used as a creative/tonal reference, not a scientific
+claim). Whatever's picked saturates that entire ad — hook, mirror, shift,
+proof, cta all written from inside that one state's real interior
+monologue — so the same angle can produce genuinely different ads depending
+on the tone (e.g. "Cost of inaction" written from Grief reads mournful and
+resigned; the same angle from Anger reads frustrated and comparison-driven).
+No backend changes were needed for this — the choice gets baked directly
+into that angle's brief text client-side
+(`withEmotion()` in `src/app/page.tsx`), reusing the same pipeline that
+already treats each angle's description as its writing instructions.
 - **Add your own** — name it, describe its mechanism, done.
 - **Attach reference material** to any style — paste an ad transcript or
   sales letter, or upload a funnel screenshot. When that style is selected

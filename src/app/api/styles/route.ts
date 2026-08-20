@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { styleRowToStyle, styleToRow, type StyleRow } from "@/lib/dbMappers";
-import { seedStyles } from "@/lib/styleLibrary";
-import type { Style } from "@/lib/styleLibrary";
+import { seedStyles, DEFAULT_EMOTION_STATES } from "@/lib/styleLibrary";
+import type { Style, StyleExample } from "@/lib/styleLibrary";
+
+// Built-in categories added after a database was already seeded need to be
+// backfilled here — editing styleLibrary.ts alone doesn't reach a database
+// that was seeded before the new category existed.
+const BACKFILLS: { category: Style["category"]; defaults: Omit<Style, "examples">[] }[] = [
+  { category: "emotionalTone", defaults: DEFAULT_EMOTION_STATES },
+];
 
 export async function GET() {
   const db = supabaseServer();
@@ -19,7 +26,19 @@ export async function GET() {
     return NextResponse.json({ styles: seeded });
   }
 
-  return NextResponse.json({ styles: (data as StyleRow[]).map(styleRowToStyle) });
+  let styles = (data as StyleRow[]).map(styleRowToStyle);
+
+  const missing = BACKFILLS.filter((b) => !styles.some((s) => s.category === b.category));
+  if (missing.length > 0) {
+    const newStyles: Style[] = missing.flatMap((b) =>
+      b.defaults.map((s) => ({ ...s, examples: [] as StyleExample[] }))
+    );
+    const { error: insertError } = await db.from("styles").insert(newStyles.map(styleToRow));
+    if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
+    styles = [...styles, ...newStyles];
+  }
+
+  return NextResponse.json({ styles });
 }
 
 export async function POST(req: NextRequest) {

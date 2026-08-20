@@ -8,12 +8,14 @@ const CATEGORY_NOUN: Record<StyleCategory, string> = {
   adAngle: "ad angle",
   funnelStyle: "funnel style",
   vslStyle: "VSL style",
+  emotionalTone: "emotional tone",
 };
 
 const CATEGORY_TABS: { key: StyleCategory; label: string }[] = [
   { key: "adAngle", label: "Ad Copy & Video Ad Copy angles" },
   { key: "funnelStyle", label: "Funnel Copy styles" },
   { key: "vslStyle", label: "VSL styles" },
+  { key: "emotionalTone", label: "Emotional Tone" },
 ];
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -273,6 +275,15 @@ export function StyleLibrary({ styles, onChanged }: { styles: Style[]; onChanged
           </button>
         ))}
       </div>
+
+      {tab === "emotionalTone" && (
+        <p className="mt-3 text-xs text-neutral-400 dark:text-neutral-500">
+          Adapted from David Hawkins&apos; Map of Consciousness — used here as a creative/tonal
+          reference for voice, not a scientific claim. Assign one per ad angle in the style-selection
+          step: that ad&apos;s hook, mirror, shift, proof, and CTA all get written from inside that one
+          state.
+        </p>
+      )}
 
       <div className="mt-4 space-y-3">
         {filtered.map((style) => (

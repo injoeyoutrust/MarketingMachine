@@ -1,4 +1,4 @@
-export type StyleCategory = "adAngle" | "funnelStyle" | "vslStyle";
+export type StyleCategory = "adAngle" | "funnelStyle" | "vslStyle" | "emotionalTone";
 
 export interface StyleExample {
   id: string;
@@ -291,10 +291,154 @@ export const DEFAULT_VSL_STYLES: Omit<Style, "examples">[] = [
   },
 ];
 
+// Emotional tone states, adapted from David Hawkins' Map of Consciousness —
+// used as a creative/tonal reference, not a scientific claim. Each state
+// describes the reader's real interior monologue at that level, so Hook and
+// Mirror can be written from inside it rather than judged from outside it.
+// Courage (200) is the marked threshold from "contracted" to "expanded."
+export const DEFAULT_EMOTION_STATES: Omit<Style, "examples">[] = [
+  {
+    id: "emotion-shame",
+    category: "emotionalTone",
+    name: "Shame (20)",
+    description:
+      "Contracted. Feels worthless, wants to disappear, self-loathing — 'I'm the problem.' Rarely useful as a target state; too paralyzing to act from. Useful only as a current-state read for the most beaten-down reader.",
+    builtIn: true,
+  },
+  {
+    id: "emotion-guilt",
+    category: "emotionalTone",
+    name: "Guilt (30)",
+    description:
+      "Contracted. Self-blame, a punishing inner voice — 'I should have known better, I did this to myself.'",
+    builtIn: true,
+  },
+  {
+    id: "emotion-apathy",
+    category: "emotionalTone",
+    name: "Apathy (50)",
+    description:
+      "Contracted. Hopeless, numb resignation — 'what's the point, nothing changes anyway.' Has stopped trying, not just stopped hoping.",
+    builtIn: true,
+  },
+  {
+    id: "emotion-grief",
+    category: "emotionalTone",
+    name: "Grief (75)",
+    description:
+      "Contracted. Mourning what didn't happen — years spent, chances missed. 'I can't get that time back.'",
+    builtIn: true,
+  },
+  {
+    id: "emotion-fear",
+    category: "emotionalTone",
+    name: "Fear (100)",
+    description:
+      "Contracted. Anxious, catastrophizing, afraid of being exposed as a failure or making it worse. 'What if I try and it doesn't work.'",
+    builtIn: true,
+  },
+  {
+    id: "emotion-desire",
+    category: "emotionalTone",
+    name: "Desire (125)",
+    description:
+      "Contracted. Craving, wanting badly but not yet acting — pull without follow-through. 'I want this so bad it hurts to think about.'",
+    builtIn: true,
+  },
+  {
+    id: "emotion-anger",
+    category: "emotionalTone",
+    name: "Anger (150)",
+    description:
+      "Contracted. Frustrated, blaming an external villain — a bad boss, a broker, the system. 'I'm sick of this happening to me.'",
+    builtIn: true,
+  },
+  {
+    id: "emotion-pride",
+    category: "emotionalTone",
+    name: "Pride (175)",
+    description:
+      "Contracted. Defensive ego protecting against admitting the real problem — 'I don't need help, I've got this handled' (while clearly not having it handled).",
+    builtIn: true,
+  },
+  {
+    id: "emotion-courage",
+    category: "emotionalTone",
+    name: "Courage (200)",
+    description:
+      "The threshold — first expanded state. 'I can do this' despite the fear still being present. First real willingness to face facts and act.",
+    builtIn: true,
+  },
+  {
+    id: "emotion-neutrality",
+    category: "emotionalTone",
+    name: "Neutrality (250)",
+    description:
+      "Expanded. Calm, flexible, non-reactive — 'I'm okay either way, let's just see what's actually true.'",
+    builtIn: true,
+  },
+  {
+    id: "emotion-willingness",
+    category: "emotionalTone",
+    name: "Willingness (310)",
+    description:
+      "Expanded. Open, cooperative, actively saying yes to growth — 'okay, walk me through it, I'm in.'",
+    builtIn: true,
+  },
+  {
+    id: "emotion-acceptance",
+    category: "emotionalTone",
+    name: "Acceptance (350)",
+    description:
+      "Expanded. At peace with what is, no longer fighting reality — ready to build from exactly where they actually stand, not where they wish they were.",
+    builtIn: true,
+  },
+  {
+    id: "emotion-reason",
+    category: "emotionalTone",
+    name: "Reason (400)",
+    description:
+      "Expanded. Logical, wants the data and the plan — convinced by clear thinking, not emotional appeal. 'Show me the numbers and the steps.'",
+    builtIn: true,
+  },
+  {
+    id: "emotion-love",
+    category: "emotionalTone",
+    name: "Love (500)",
+    description:
+      "Expanded. Genuinely cares about the outcome, not just personal gain — for family, for the crew, for what this makes possible for someone else.",
+    builtIn: true,
+  },
+  {
+    id: "emotion-joy",
+    category: "emotionalTone",
+    name: "Joy (540)",
+    description:
+      "Expanded. Grateful, energized, an internal yes that doesn't need external permission. Rarely a realistic target for a first ad — more common by the end of a nurture sequence.",
+    builtIn: true,
+  },
+  {
+    id: "emotion-peace",
+    category: "emotionalTone",
+    name: "Peace (600)",
+    description: "Expanded. Total presence, no urgency, quietly certain. Rare as a copy target; more a description of the life after the offer delivers.",
+    builtIn: true,
+  },
+  {
+    id: "emotion-enlightenment",
+    category: "emotionalTone",
+    name: "Enlightenment (700+)",
+    description:
+      "Expanded. Beyond personal need. Essentially never a usable copy target — included only for completeness of the scale.",
+    builtIn: true,
+  },
+];
+
 export function seedStyles(): Style[] {
   return [
     ...DEFAULT_AD_ANGLES.map((s) => ({ ...s, examples: [] as StyleExample[] })),
     ...DEFAULT_FUNNEL_STYLES.map((s) => ({ ...s, examples: [] as StyleExample[] })),
     ...DEFAULT_VSL_STYLES.map((s) => ({ ...s, examples: [] as StyleExample[] })),
+    ...DEFAULT_EMOTION_STATES.map((s) => ({ ...s, examples: [] as StyleExample[] })),
   ];
 }

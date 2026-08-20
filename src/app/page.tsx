@@ -16,6 +16,9 @@ import {
   purePushAngleName,
   QUICK_IDEA_KEY,
   PURE_PUSH_KEY,
+  ANGLE_EMOTIONS_KEY,
+  encodeAngleEmotions,
+  decodeAngleEmotions,
   type IntakeFields,
 } from "@/lib/intakeFields";
 import type { SavedRun, CampaignKit } from "@/lib/types";
@@ -29,6 +32,37 @@ const DEFAULT_ANGLE_IDS = [
 ];
 const DEFAULT_FUNNEL_ID = "optin-vsl-personal-call";
 const DEFAULT_VSL_ID = "personal-call-frame";
+const DEFAULT_EMOTION_ID = "emotion-fear";
+
+function stripEmotionPoints(name: string): string {
+  return name.replace(/\s*\(\d+\+?\)\s*$/, "");
+}
+
+/** Bakes a single assigned emotional tone into an angle's brief so the
+ * whole ad set (hook/mirror/shift/proof/cta) gets written from within that
+ * one state — no backend changes needed, the pipeline already treats each
+ * angle's description as its writing instructions. */
+function withEmotion(angle: Style, emotion: Style | undefined): Style {
+  if (!emotion) return angle;
+  return {
+    ...angle,
+    description: `${angle.description}\n\nAssigned emotional tone — ${emotion.name}: ${emotion.description}\nWrite this entire ad — hook, mirror, shift, proof, cta — from within this one emotional state throughout. Do not blend in other emotional registers.`,
+    examples: [...angle.examples, ...emotion.examples],
+  };
+}
+
+/** "Identity mirror (Fear) · Cost of inaction (Grief)" for a run's header. */
+function describeAngleEmotions(run: SavedRun, styles: Style[]): string[] {
+  const map = decodeAngleEmotions(run.fields[ANGLE_EMOTIONS_KEY]);
+  return Object.entries(map)
+    .map(([angleId, emotionId]) => {
+      const angle = styles.find((s) => s.id === angleId);
+      const emotion = styles.find((s) => s.id === emotionId);
+      if (!angle) return null;
+      return emotion ? `${angle.name} (${stripEmotionPoints(emotion.name)})` : angle.name;
+    })
+    .filter((s): s is string => Boolean(s));
+}
 
 type Panel = "runs" | "library";
 type Stage = "form" | "styles";
@@ -47,6 +81,9 @@ export default function Home() {
   const [purePushIdea, setPurePushIdea] = useState("");
   const [fields, setFields] = useState<IntakeFields>(() => emptyIntakeFields());
   const [selectedAngleIds, setSelectedAngleIds] = useState<string[]>(DEFAULT_ANGLE_IDS);
+  const [angleEmotionIds, setAngleEmotionIds] = useState<Record<string, string>>(() =>
+    Object.fromEntries(DEFAULT_ANGLE_IDS.map((id) => [id, DEFAULT_EMOTION_ID]))
+  );
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(DEFAULT_FUNNEL_ID);
   const [selectedVslId, setSelectedVslId] = useState<string | null>(DEFAULT_VSL_ID);
 
@@ -78,6 +115,8 @@ export default function Home() {
     setQuickIdea("");
     setPurePushIdea("");
     setFields(emptyIntakeFields());
+    setSelectedAngleIds(DEFAULT_ANGLE_IDS);
+    setAngleEmotionIds(Object.fromEntries(DEFAULT_ANGLE_IDS.map((id) => [id, DEFAULT_EMOTION_ID])));
     setError(null);
   }
 
@@ -117,6 +156,7 @@ export default function Home() {
       .filter((s) => s.category === "adAngle" && run.adAngleNames.includes(s.name))
       .map((s) => s.id);
     if (matchedAngleIds.length > 0) setSelectedAngleIds(matchedAngleIds);
+    setAngleEmotionIds(decodeAngleEmotions(run.fields[ANGLE_EMOTIONS_KEY]));
     const matchedFunnel = styles.find((s) => s.category === "funnelStyle" && s.name === run.funnelStyleName);
     if (matchedFunnel) setSelectedFunnelId(matchedFunnel.id);
     const matchedVsl = styles.find((s) => s.category === "vslStyle" && s.name === run.vslStyleName);
@@ -136,6 +176,11 @@ export default function Home() {
 
   function toggleAngle(id: string) {
     setSelectedAngleIds((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
+    setAngleEmotionIds((prev) => (prev[id] ? prev : { ...prev, [id]: DEFAULT_EMOTION_ID }));
+  }
+
+  function setAngleEmotion(angleId: string, emotionId: string) {
+    setAngleEmotionIds((prev) => ({ ...prev, [angleId]: emotionId }));
   }
 
   function handleContinueToStyles() {
@@ -212,16 +257,26 @@ export default function Home() {
     }
 
     const intake = mode === "quick" ? composeQuickIdeaText(quickIdea) : composeIntakeText(fields);
-    const savedFields = mode === "quick" ? { [QUICK_IDEA_KEY]: quickIdea.trim() } : fields;
-    const adAngles = selectedAngleIds
+    const rawAngles = selectedAngleIds
       .map((id) => styles.find((s) => s.id === id))
       .filter((s): s is Style => Boolean(s));
+    const adAngles = rawAngles.map((angle) =>
+      withEmotion(angle, styles.find((s) => s.id === angleEmotionIds[angle.id]))
+    );
     const funnelStyle = styles.find((s) => s.id === selectedFunnelId);
     const vslStyle = styles.find((s) => s.id === selectedVslId);
     if (!funnelStyle || !vslStyle) {
       setError("Couldn't find the selected funnel/VSL style. Try picking it again.");
       return;
     }
+
+    const usedAngleEmotions = Object.fromEntries(
+      selectedAngleIds.filter((id) => angleEmotionIds[id]).map((id) => [id, angleEmotionIds[id]])
+    );
+    const savedFields: IntakeFields =
+      mode === "quick"
+        ? { [QUICK_IDEA_KEY]: quickIdea.trim(), [ANGLE_EMOTIONS_KEY]: encodeAngleEmotions(usedAngleEmotions) }
+        : { ...fields, [ANGLE_EMOTIONS_KEY]: encodeAngleEmotions(usedAngleEmotions) };
 
     await runGenerate({ intake, savedFields, adAngles, funnelStyle, vslStyle });
   }
@@ -295,7 +350,8 @@ export default function Home() {
                     {activeRun.label}
                   </h2>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {activeRun.adAngleNames.join(" · ")} — {activeRun.funnelStyleName} — {activeRun.vslStyleName}
+                    {describeAngleEmotions(activeRun, styles).join(" · ") || activeRun.adAngleNames.join(" · ")} —{" "}
+                    {activeRun.funnelStyleName} — {activeRun.vslStyleName}
                   </p>
                 </div>
                 <button
@@ -331,6 +387,8 @@ export default function Home() {
               styles={styles}
               selectedAngleIds={selectedAngleIds}
               onToggleAngle={toggleAngle}
+              angleEmotionIds={angleEmotionIds}
+              onSetAngleEmotion={setAngleEmotion}
               selectedFunnelId={selectedFunnelId}
               onSelectFunnel={setSelectedFunnelId}
               selectedVslId={selectedVslId}
