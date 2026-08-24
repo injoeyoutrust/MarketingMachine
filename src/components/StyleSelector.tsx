@@ -1,6 +1,6 @@
 "use client";
 
-import { sortEmotionStyles, type Style } from "@/lib/styleLibrary";
+import { sortEmotionStyles, stripEmotionPoints, type Style } from "@/lib/styleLibrary";
 
 function StyleOption({
   style,
@@ -8,6 +8,7 @@ function StyleOption({
   onToggle,
   inputType,
   groupName,
+  emotionBadge,
   extra,
 }: {
   style: Style;
@@ -15,6 +16,8 @@ function StyleOption({
   onToggle: () => void;
   inputType: "checkbox" | "radio";
   groupName?: string;
+  /** Applied emotion's display name, shown as a live pill so it's visible without opening the dropdown. */
+  emotionBadge?: string;
   extra?: React.ReactNode;
 }) {
   return (
@@ -33,12 +36,17 @@ function StyleOption({
           onChange={onToggle}
           className="mt-0.5"
         />
-        <span>
-          <span className="block font-medium text-neutral-900 dark:text-neutral-100">
-            {style.name}
+        <span className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span className="font-medium text-neutral-900 dark:text-neutral-100">{style.name}</span>
             {style.examples.length > 0 && (
-              <span className="ml-1.5 text-[0.65rem] font-normal text-indigo-600 dark:text-indigo-400">
+              <span className="text-[0.65rem] font-normal text-indigo-600 dark:text-indigo-400">
                 {style.examples.length} ref{style.examples.length > 1 ? "s" : ""}
+              </span>
+            )}
+            {checked && emotionBadge && (
+              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[0.65rem] font-medium text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                🎭 {emotionBadge}
               </span>
             )}
           </span>
@@ -117,6 +125,11 @@ export function StyleSelector({
             checked={selectedAngleIds.includes(angle.id)}
             onToggle={() => onToggleAngle(angle.id)}
             inputType="checkbox"
+            emotionBadge={
+              angleEmotionIds[angle.id]
+                ? stripEmotionPoints(emotions.find((e) => e.id === angleEmotionIds[angle.id])?.name ?? "")
+                : undefined
+            }
             extra={
               emotions.length > 0 && (
                 <label className="block">

@@ -443,6 +443,11 @@ export const DEFAULT_EMOTION_STATES: Omit<Style, "examples">[] = [
 // framework-order sort instead of relying on fetch order.
 export const EMOTION_DISPLAY_ORDER: string[] = DEFAULT_EMOTION_STATES.map((s) => s.id);
 
+/** "Fear (100)" -> "Fear" — for compact display where the scale number is noise. */
+export function stripEmotionPoints(name: string): string {
+  return name.replace(/\s*\(\d+\+?\)\s*$/, "");
+}
+
 export function sortEmotionStyles(styles: Style[]): Style[] {
   const rank = (id: string) => {
     const i = EMOTION_DISPLAY_ORDER.indexOf(id);

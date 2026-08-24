@@ -22,7 +22,7 @@ import {
   type IntakeFields,
 } from "@/lib/intakeFields";
 import type { SavedRun, CampaignKit } from "@/lib/types";
-import type { Style } from "@/lib/styleLibrary";
+import { stripEmotionPoints, type Style } from "@/lib/styleLibrary";
 
 const DEFAULT_ANGLE_IDS = [
   "identity-mirror",
@@ -33,10 +33,6 @@ const DEFAULT_ANGLE_IDS = [
 const DEFAULT_FUNNEL_ID = "optin-vsl-personal-call";
 const DEFAULT_VSL_ID = "personal-call-frame";
 const DEFAULT_EMOTION_ID = "emotion-fear";
-
-function stripEmotionPoints(name: string): string {
-  return name.replace(/\s*\(\d+\+?\)\s*$/, "");
-}
 
 /** Bakes a single assigned emotional tone into an angle's brief so the
  * whole ad set (hook/mirror/shift/proof/cta) gets written from within that
@@ -51,8 +47,7 @@ function withEmotion(angle: Style, emotion: Style | undefined): Style {
   };
 }
 
-/** "Identity mirror (Fear) · Cost of inaction (Grief)" for a run's header. */
-function describeAngleEmotions(run: SavedRun, styles: Style[]): string[] {
+function angleEmotionEntries(run: SavedRun, styles: Style[]): { angleName: string; emotionName: string }[] {
   const map = decodeAngleEmotions(run.fields[ANGLE_EMOTIONS_KEY]);
   return Object.entries(map)
     .map(([angleId, emotionId]) => {
@@ -61,10 +56,21 @@ function describeAngleEmotions(run: SavedRun, styles: Style[]): string[] {
       // run's recorded angle name (there's only ever one for a push run).
       const angleName = angleId === "pure-push" ? run.adAngleNames[0] : styles.find((s) => s.id === angleId)?.name;
       const emotion = styles.find((s) => s.id === emotionId);
-      if (!angleName) return null;
-      return emotion ? `${angleName} (${stripEmotionPoints(emotion.name)})` : angleName;
+      if (!angleName || !emotion) return null;
+      return { angleName, emotionName: stripEmotionPoints(emotion.name) };
     })
-    .filter((s): s is string => Boolean(s));
+    .filter((e): e is { angleName: string; emotionName: string } => Boolean(e));
+}
+
+/** Angle name -> emotion display name, for badges on each ad set's card. */
+function angleEmotionsByName(run: SavedRun, styles: Style[]): Record<string, string> {
+  return Object.fromEntries(angleEmotionEntries(run, styles).map((e) => [e.angleName, e.emotionName]));
+}
+
+/** "Identity mirror (Fear) · Cost of inaction (no tone)" for a run's header — every angle shown, tone or not. */
+function describeAngleEmotions(run: SavedRun, styles: Style[]): string[] {
+  const byName = angleEmotionsByName(run, styles);
+  return run.adAngleNames.map((name) => (byName[name] ? `${name} (${byName[name]})` : name));
 }
 
 type Panel = "runs" | "library";
@@ -367,8 +373,8 @@ export default function Home() {
                     {activeRun.label}
                   </h2>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {describeAngleEmotions(activeRun, styles).join(" · ") || activeRun.adAngleNames.join(" · ")} —{" "}
-                    {activeRun.funnelStyleName} — {activeRun.vslStyleName}
+                    {describeAngleEmotions(activeRun, styles).join(" · ")} — {activeRun.funnelStyleName} —{" "}
+                    {activeRun.vslStyleName}
                   </p>
                 </div>
                 <button
@@ -379,7 +385,7 @@ export default function Home() {
                 </button>
               </div>
               <div className="mx-auto max-w-5xl">
-                <ResultsTabs kit={activeRun.kit} />
+                <ResultsTabs kit={activeRun.kit} angleEmotions={angleEmotionsByName(activeRun, styles)} />
               </div>
             </div>
           ) : stage === "form" ? (

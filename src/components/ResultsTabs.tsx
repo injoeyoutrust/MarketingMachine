@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { CampaignKit, TabKey } from "@/lib/types";
 import { TAB_LABELS } from "@/lib/types";
-import { Card } from "@/components/Card";
+import { Card, EmotionBadge } from "@/components/Card";
 import { CopyField, CopyListField } from "@/components/CopyField";
 
 const TAB_ORDER: TabKey[] = [
@@ -18,7 +18,14 @@ const TAB_ORDER: TabKey[] = [
   "flags",
 ];
 
-export function ResultsTabs({ kit }: { kit: CampaignKit }) {
+export function ResultsTabs({
+  kit,
+  angleEmotions,
+}: {
+  kit: CampaignKit;
+  /** Angle name -> emotion display name (e.g. "Grief"), for ad sets that had one assigned. */
+  angleEmotions?: Record<string, string>;
+}) {
   const [active, setActive] = useState<TabKey>("extraction");
 
   return (
@@ -62,7 +69,11 @@ export function ResultsTabs({ kit }: { kit: CampaignKit }) {
 
         {active === "adSets" &&
           kit.adSets.map((ad, i) => (
-            <Card key={i} title={ad.angle}>
+            <Card
+              key={i}
+              title={ad.angle}
+              badge={angleEmotions?.[ad.angle] ? <EmotionBadge label={angleEmotions[ad.angle]} /> : undefined}
+            >
               <CopyField label="Primary text" value={ad.primaryText} />
               <CopyField label="Headline" value={ad.headline} />
               <CopyField label="Description" value={ad.description} />
