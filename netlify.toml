@@ -1,8 +1,13 @@
 [build]
   command = "npm run build"
+  # Explicit, not left to Netlify's default resolution — that default was
+  # landing on the repo root, which equals the (also-unset) base directory
+  # and triggers "publish directory cannot be the same as base directory."
+  publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "20"
+  # @netlify/plugin-nextjs (v5, OpenNext-based) requires Node 22+.
+  NODE_VERSION = "22"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
