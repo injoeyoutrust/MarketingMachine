@@ -4,28 +4,15 @@ import { CopyField } from "@/components/CopyField";
 import { EmotionBadge } from "@/components/Card";
 import type { AdSet } from "@/lib/types";
 
-// Cycled by ad-set index so consecutive cards are never the same color —
-// the fastest way to tell at a glance where one ad set ends and the next
-// begins when scrolling through several.
-const ACCENTS = [
-  "border-l-indigo-500",
-  "border-l-violet-500",
-  "border-l-blue-500",
-  "border-l-teal-500",
-  "border-l-amber-500",
-  "border-l-rose-500",
-  "border-l-fuchsia-500",
-];
-
-// Fixed per beat (not per card) so the same color always means the same
-// beat across every ad set — Hook is always this blue, Proof always this
-// green, everywhere in the kit.
+// Fixed per beat (not per card), light to dark following the beat's place
+// in the arc — Hook is always the lightest, CTA always the darkest,
+// everywhere in the kit. One accent family (orange), not a rainbow.
 const BEAT_COLORS: Record<string, string> = {
-  Hook: "bg-sky-500",
-  Mirror: "bg-blue-500",
-  Shift: "bg-violet-500",
-  Proof: "bg-emerald-500",
-  CTA: "bg-amber-500",
+  Hook: "bg-orange-300",
+  Mirror: "bg-orange-400",
+  Shift: "bg-orange-500",
+  Proof: "bg-orange-600",
+  CTA: "bg-orange-700",
 };
 
 export function AdSetCard({
@@ -37,7 +24,6 @@ export function AdSetCard({
   ad: AdSet;
   emotionLabel?: string;
 }) {
-  const accent = ACCENTS[index % ACCENTS.length];
   const beats: { label: keyof typeof BEAT_COLORS; value: string }[] = [
     { label: "Hook", value: ad.videoScript.hook },
     { label: "Mirror", value: ad.videoScript.mirror },
@@ -47,9 +33,7 @@ export function AdSetCard({
   ];
 
   return (
-    <div
-      className={`overflow-hidden rounded-xl border border-l-4 border-neutral-200 bg-white shadow-sm dark:border-neutral-800 ${accent}`}
-    >
+    <div className="overflow-hidden rounded-xl border border-l-4 border-neutral-200 border-l-orange-500 bg-white shadow-sm dark:border-neutral-800 dark:border-l-orange-500">
       <div className="flex items-center justify-between gap-2 border-b border-neutral-200 bg-neutral-50 px-5 py-3 dark:border-neutral-800 dark:bg-neutral-900/60">
         <div className="flex items-center gap-2.5">
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-[0.7rem] font-bold text-white dark:bg-neutral-100 dark:text-neutral-900">

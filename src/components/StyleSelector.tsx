@@ -24,7 +24,7 @@ function StyleOption({
     <div
       className={`rounded-lg border p-3 text-sm transition-colors ${
         checked
-          ? "border-indigo-400 bg-indigo-50 dark:border-indigo-600 dark:bg-indigo-950/40"
+          ? "border-orange-400 bg-orange-50 dark:border-orange-600 dark:bg-orange-950/40"
           : "border-neutral-200 bg-white hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/50"
       }`}
     >
@@ -40,12 +40,12 @@ function StyleOption({
           <span className="flex flex-wrap items-center gap-1.5">
             <span className="font-medium text-neutral-900 dark:text-neutral-100">{style.name}</span>
             {style.examples.length > 0 && (
-              <span className="text-[0.65rem] font-normal text-indigo-600 dark:text-indigo-400">
+              <span className="text-[0.65rem] font-normal text-orange-600 dark:text-orange-400">
                 {style.examples.length} ref{style.examples.length > 1 ? "s" : ""}
               </span>
             )}
             {checked && emotionBadge && (
-              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[0.65rem] font-medium text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+              <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[0.65rem] font-medium text-orange-700 dark:bg-orange-950 dark:text-orange-300">
                 🎭 {emotionBadge}
               </span>
             )}
@@ -114,7 +114,7 @@ export function StyleSelector({
         </div>
       )}
 
-      <h3 className="mt-6 mb-2 text-sm font-bold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
+      <h3 className="mt-6 mb-2 text-sm font-bold uppercase tracking-wide text-orange-600 dark:text-orange-400">
         Ad Copy &amp; Video Ad Copy angles ({selectedAngleIds.length} selected)
       </h3>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -140,7 +140,7 @@ export function StyleSelector({
                     value={angleEmotionIds[angle.id] ?? ""}
                     onChange={(e) => onSetAngleEmotion(angle.id, e.target.value)}
                     onClick={(e) => e.stopPropagation()}
-                    className="mt-1 w-full rounded border border-neutral-300 bg-white px-2 py-1 text-xs text-neutral-800 outline-none focus:border-indigo-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200"
+                    className="mt-1 w-full rounded border border-neutral-300 bg-white px-2 py-1 text-xs text-neutral-800 outline-none focus:border-orange-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200"
                   >
                     <option value="">No emotional tone — angle description only</option>
                     {emotions.map((e) => (
@@ -156,7 +156,7 @@ export function StyleSelector({
         ))}
       </div>
 
-      <h3 className="mt-8 mb-2 text-sm font-bold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
+      <h3 className="mt-8 mb-2 text-sm font-bold uppercase tracking-wide text-orange-600 dark:text-orange-400">
         Funnel Copy style
       </h3>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -172,7 +172,7 @@ export function StyleSelector({
         ))}
       </div>
 
-      <h3 className="mt-8 mb-2 text-sm font-bold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
+      <h3 className="mt-8 mb-2 text-sm font-bold uppercase tracking-wide text-orange-600 dark:text-orange-400">
         VSL style
       </h3>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -191,7 +191,7 @@ export function StyleSelector({
       <button
         onClick={onGenerate}
         disabled={loading}
-        className="mt-8 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-8 w-full rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Building the kit — this takes 30-60s…" : "Generate campaign kit"}
       </button>

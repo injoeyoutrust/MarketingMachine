@@ -76,7 +76,7 @@ function AddExampleForm({ style, onAdded }: { style: Style; onAdded: () => void 
     return (
       <button
         onClick={() => setOpen(true)}
-        className="mt-2 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+        className="mt-2 text-xs font-medium text-orange-600 hover:underline dark:text-orange-400"
       >
         + Add reference example
       </button>
@@ -88,13 +88,13 @@ function AddExampleForm({ style, onAdded }: { style: Style; onAdded: () => void 
       <div className="mb-2 flex gap-1">
         <button
           onClick={() => setMode("text")}
-          className={`rounded px-2 py-1 text-xs font-medium ${mode === "text" ? "bg-indigo-600 text-white" : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"}`}
+          className={`rounded px-2 py-1 text-xs font-medium ${mode === "text" ? "bg-orange-600 text-white" : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"}`}
         >
           Paste transcript / sales letter
         </button>
         <button
           onClick={() => setMode("image")}
-          className={`rounded px-2 py-1 text-xs font-medium ${mode === "image" ? "bg-indigo-600 text-white" : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"}`}
+          className={`rounded px-2 py-1 text-xs font-medium ${mode === "image" ? "bg-orange-600 text-white" : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"}`}
         >
           Upload funnel screenshot
         </button>
@@ -120,7 +120,7 @@ function AddExampleForm({ style, onAdded }: { style: Style; onAdded: () => void 
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+          className="rounded bg-orange-600 px-3 py-1 text-xs font-semibold text-white hover:bg-orange-500 disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save example"}
         </button>
@@ -215,7 +215,7 @@ function NewStyleForm({ category, onAdded }: { category: StyleCategory; onAdded:
     return (
       <button
         onClick={() => setOpen(true)}
-        className="w-full rounded-xl border-2 border-dashed border-neutral-300 py-3 text-sm font-medium text-neutral-500 hover:border-indigo-400 hover:text-indigo-600 dark:border-neutral-700 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
+        className="w-full rounded-xl border-2 border-dashed border-neutral-300 py-3 text-sm font-medium text-neutral-500 hover:border-orange-400 hover:text-orange-600 dark:border-neutral-700 dark:hover:border-orange-500 dark:hover:text-orange-400"
       >
         + Add a new {CATEGORY_NOUN[category]}
       </button>
@@ -223,7 +223,7 @@ function NewStyleForm({ category, onAdded }: { category: StyleCategory; onAdded:
   }
 
   return (
-    <div className="rounded-xl border border-indigo-300 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/40">
+    <div className="rounded-xl border border-orange-300 bg-orange-50 p-4 dark:border-orange-800 dark:bg-orange-950/40">
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -238,7 +238,7 @@ function NewStyleForm({ category, onAdded }: { category: StyleCategory; onAdded:
         className="w-full rounded border border-neutral-300 bg-white px-2 py-1.5 text-sm text-neutral-900 outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
       />
       <div className="mt-2 flex gap-2">
-        <button onClick={handleSave} className="rounded bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500">
+        <button onClick={handleSave} className="rounded bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-500">
           Save style
         </button>
         <button
@@ -272,7 +272,7 @@ export function StyleLibrary({ styles, onChanged }: { styles: Style[]; onChanged
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${tab === t.key ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400" : "border-transparent text-neutral-500"}`}
+            className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${tab === t.key ? "border-orange-600 text-orange-600 dark:border-orange-400 dark:text-orange-400" : "border-transparent text-neutral-500"}`}
           >
             {t.label}
           </button>

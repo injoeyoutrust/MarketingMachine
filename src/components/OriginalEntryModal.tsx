@@ -81,7 +81,7 @@ function FullIntakeReadOnly({ fields }: { fields: Record<string, string> }) {
     <div className="space-y-5">
       {sectionsWithAnswers.map((section) => (
         <div key={section.title}>
-          <h4 className="mb-1 text-xs font-bold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
+          <h4 className="mb-1 text-xs font-bold uppercase tracking-wide text-orange-600 dark:text-orange-400">
             {section.title}
           </h4>
           {section.fields.map((f) => (

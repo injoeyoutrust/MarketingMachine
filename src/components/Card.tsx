@@ -20,7 +20,7 @@ export function Card({
 
 export function EmotionBadge({ label }: { label: string }) {
   return (
-    <span className="shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-[0.7rem] font-medium text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+    <span className="shrink-0 rounded-full bg-orange-100 px-2 py-0.5 text-[0.7rem] font-medium text-orange-700 dark:bg-orange-950 dark:text-orange-300">
       🎭 {label}
     </span>
   );

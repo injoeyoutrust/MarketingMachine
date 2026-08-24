@@ -1,6 +1,7 @@
 "use client";
 
 import type { SavedRun } from "@/lib/types";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function Sidebar({
   runs,
@@ -24,7 +25,7 @@ export function Sidebar({
       <div className="space-y-1.5 p-3">
         <button
           onClick={onNew}
-          className="w-full rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+          className="w-full rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-500"
         >
           + New campaign kit
         </button>
@@ -32,7 +33,7 @@ export function Sidebar({
           onClick={onOpenLibrary}
           className={`w-full rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
             panel === "library"
-              ? "border-indigo-400 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300"
+              ? "border-orange-400 bg-orange-50 text-orange-700 dark:border-orange-700 dark:bg-orange-950/50 dark:text-orange-300"
               : "border-neutral-300 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
           }`}
         >
@@ -55,7 +56,7 @@ export function Sidebar({
             key={run.id}
             className={`group mb-1 flex items-center justify-between rounded-lg px-2 py-2 text-sm ${
               run.id === activeId
-                ? "bg-indigo-100 dark:bg-indigo-950"
+                ? "bg-orange-100 dark:bg-orange-950"
                 : "hover:bg-neutral-100 dark:hover:bg-neutral-900"
             }`}
           >
@@ -77,6 +78,9 @@ export function Sidebar({
             </button>
           </div>
         ))}
+      </div>
+      <div className="border-t border-neutral-200 p-3 dark:border-neutral-800">
+        <ThemeToggle />
       </div>
     </aside>
   );

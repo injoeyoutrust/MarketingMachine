@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
+/* Switches Tailwind's `dark:` variant from prefers-color-scheme-only to a
+   .dark ancestor class, so the toggle in the sidebar can override system
+   preference (src/lib/theme.ts applies/removes this class on <html>). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+:root.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -10,13 +20,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {

@@ -33,7 +33,7 @@ function QuickIdeaPanel({
         onChange={(e) => onIdeaChange(e.target.value)}
         rows={6}
         placeholder="e.g. Ad about company drivers who are scared to go independent because they don't know how to find freight on their own..."
-        className="mt-2 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-indigo-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
+        className="mt-2 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-orange-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
       />
       <div className="mt-3">
         <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-600">
@@ -44,7 +44,7 @@ function QuickIdeaPanel({
             <button
               key={ex}
               onClick={() => onIdeaChange(ex)}
-              className="block w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-left text-xs text-neutral-600 transition-colors hover:border-indigo-300 hover:bg-indigo-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/30"
+              className="block w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-left text-xs text-neutral-600 transition-colors hover:border-orange-300 hover:bg-orange-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:border-orange-700 dark:hover:bg-orange-950/30"
             >
               {ex}
             </button>
@@ -70,7 +70,7 @@ function PurePushPanel({
 }) {
   const sortedEmotions = sortEmotionStyles(emotionStyles);
   return (
-    <div className="mt-5 rounded-xl border border-indigo-200 bg-indigo-50/40 p-5 dark:border-indigo-900 dark:bg-indigo-950/20">
+    <div className="mt-5 rounded-xl border border-orange-200 bg-orange-50/40 p-5 dark:border-orange-900 dark:bg-orange-950/20">
       <label className="block text-sm font-medium text-neutral-800 dark:text-neutral-200">
         What&apos;s the exact concept?
       </label>
@@ -84,7 +84,7 @@ function PurePushPanel({
         onChange={(e) => onIdeaChange(e.target.value)}
         rows={8}
         placeholder="Write out the concept as fully as you want — a hook line, the tension, why it's true, what makes it click. The more specific, the closer the output matches what's in your head."
-        className="mt-2 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-indigo-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
+        className="mt-2 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-orange-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
       />
 
       {sortedEmotions.length > 0 && (
@@ -99,7 +99,7 @@ function PurePushPanel({
           <select
             value={emotionId}
             onChange={(e) => onEmotionChange(e.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-none focus:border-indigo-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200"
+            className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-none focus:border-orange-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200"
           >
             <option value="">No emotional tone — concept only</option>
             {sortedEmotions.map((e) => (
@@ -172,7 +172,7 @@ export function IntakeForm({
           <button
             onClick={primaryAction}
             disabled={loading}
-            className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="shrink-0 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {primaryLabel}
           </button>
@@ -184,7 +184,7 @@ export function IntakeForm({
           onClick={() => onModeChange("quick")}
           className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
             mode === "quick"
-              ? "bg-white text-indigo-600 shadow-sm dark:bg-neutral-800 dark:text-indigo-400"
+              ? "bg-white text-orange-600 shadow-sm dark:bg-neutral-800 dark:text-orange-400"
               : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
           }`}
         >
@@ -194,7 +194,7 @@ export function IntakeForm({
           onClick={() => onModeChange("push")}
           className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
             mode === "push"
-              ? "bg-white text-indigo-600 shadow-sm dark:bg-neutral-800 dark:text-indigo-400"
+              ? "bg-white text-orange-600 shadow-sm dark:bg-neutral-800 dark:text-orange-400"
               : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
           }`}
         >
@@ -204,7 +204,7 @@ export function IntakeForm({
           onClick={() => onModeChange("full")}
           className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
             mode === "full"
-              ? "bg-white text-indigo-600 shadow-sm dark:bg-neutral-800 dark:text-indigo-400"
+              ? "bg-white text-orange-600 shadow-sm dark:bg-neutral-800 dark:text-orange-400"
               : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
           }`}
         >
@@ -220,7 +220,7 @@ export function IntakeForm({
           value={label}
           onChange={(e) => onLabelChange(e.target.value)}
           placeholder="e.g. Hotspot LGX — dispatching offer"
-          className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-indigo-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+          className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-orange-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
         />
       </div>
 
@@ -243,7 +243,7 @@ export function IntakeForm({
       {mode === "full" &&
         INTAKE_SECTIONS.map((section) => (
           <div key={section.title} className="mt-8">
-            <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
+            <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-orange-600 dark:text-orange-400">
               {section.title}
             </h3>
             <div className="space-y-5 rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
@@ -259,14 +259,14 @@ export function IntakeForm({
                     <input
                       value={fields[f.key] ?? ""}
                       onChange={(e) => onFieldChange(f.key, e.target.value)}
-                      className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-indigo-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
+                      className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-orange-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                     />
                   ) : (
                     <textarea
                       value={fields[f.key] ?? ""}
                       onChange={(e) => onFieldChange(f.key, e.target.value)}
                       rows={3}
-                      className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-indigo-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
+                      className="mt-1.5 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-orange-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                     />
                   )}
                 </div>
@@ -278,7 +278,7 @@ export function IntakeForm({
       <button
         onClick={primaryAction}
         disabled={loading}
-        className="mt-8 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-8 w-full rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isPush && loading ? "Pushing it through — this takes 30-90s…" : primaryLabel}
       </button>

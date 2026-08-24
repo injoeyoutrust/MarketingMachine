@@ -11,7 +11,7 @@ export function CopyField({
   label: string;
   value: string;
   mono?: boolean;
-  /** Tailwind bg-color class (e.g. "bg-indigo-500") for a small dot before the label — used to color-code beats like Hook/Mirror/Shift/Proof/CTA consistently across cards. */
+  /** Tailwind bg-color class (e.g. "bg-orange-500") for a small dot before the label — used to color-code beats like Hook/Mirror/Shift/Proof/CTA consistently across cards. */
   accent?: string;
 }) {
   const [copied, setCopied] = useState(false);
