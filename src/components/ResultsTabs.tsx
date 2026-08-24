@@ -20,6 +20,7 @@ const TAB_ORDER: TabKey[] = [
 ];
 
 export type FieldEditFn = (path: string, label: string, newValue: string | string[]) => Promise<void>;
+type AdSetOrder = "generated" | "emotional";
 
 export function ResultsTabs({
   kit,
@@ -31,11 +32,12 @@ export function ResultsTabs({
   /** The frozen AI-generated snapshot, for "edited" indicators — editing is disabled if omitted. */
   originalKit?: CampaignKit;
   onFieldEdit?: FieldEditFn;
-  /** Angle name -> emotion display name (e.g. "Grief"), for ad sets that had one assigned. */
-  angleEmotions?: Record<string, string>;
+  /** Angle name -> {emotion display name, ascending development rank}, for badges and emotional-order sorting. */
+  angleEmotions?: Record<string, { label: string; rank: number }>;
 }) {
   const [active, setActive] = useState<TabKey>("extraction");
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+  const [adSetOrder, setAdSetOrder] = useState<AdSetOrder>("generated");
   const editable = Boolean(originalKit && onFieldEdit);
 
   function toggleAdSet(i: number) {
@@ -46,6 +48,20 @@ export function ResultsTabs({
       return next;
     });
   }
+
+  const adSetsWithIndex = kit.adSets.map((ad, i) => ({ ad, i }));
+  const orderedAdSets =
+    adSetOrder === "emotional"
+      ? [...adSetsWithIndex].sort((a, b) => {
+          const rankA = angleEmotions?.[a.ad.angle]?.rank ?? Number.MAX_SAFE_INTEGER;
+          const rankB = angleEmotions?.[b.ad.angle]?.rank ?? Number.MAX_SAFE_INTEGER;
+          return rankA - rankB;
+        })
+      : adSetsWithIndex;
+  const unassignedCount =
+    adSetOrder === "emotional"
+      ? kit.adSets.filter((ad) => angleEmotions?.[ad.angle] === undefined).length
+      : 0;
 
   return (
     <div>
@@ -148,31 +164,73 @@ export function ResultsTabs({
 
         {active === "adSets" && (
           <div>
-            {kit.adSets.length > 1 && (
-              <div className="mb-3 flex justify-end gap-3 text-xs font-medium">
-                <button
-                  onClick={() => setCollapsed(new Set())}
-                  className="text-orange-600 hover:underline dark:text-orange-400"
-                >
-                  Expand all
-                </button>
-                <button
-                  onClick={() => setCollapsed(new Set(kit.adSets.map((_, i) => i)))}
-                  className="text-orange-600 hover:underline dark:text-orange-400"
-                >
-                  Collapse all
-                </button>
-              </div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              {angleEmotions && Object.keys(angleEmotions).length > 0 ? (
+                <div className="flex gap-1 rounded-lg bg-neutral-100 p-1 text-xs font-medium dark:bg-neutral-900">
+                  <button
+                    onClick={() => setAdSetOrder("generated")}
+                    className={`rounded-md px-2.5 py-1 transition-colors ${
+                      adSetOrder === "generated"
+                        ? "bg-white text-orange-600 shadow-sm dark:bg-neutral-800 dark:text-orange-400"
+                        : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                    }`}
+                  >
+                    Generated order
+                  </button>
+                  <button
+                    onClick={() => setAdSetOrder("emotional")}
+                    className={`rounded-md px-2.5 py-1 transition-colors ${
+                      adSetOrder === "emotional"
+                        ? "bg-white text-orange-600 shadow-sm dark:bg-neutral-800 dark:text-orange-400"
+                        : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                    }`}
+                    title="Sort by the assigned emotional tone's position on the scale, contracted to expanded — the order to actually show a client as their emotional state develops."
+                  >
+                    🎭 Emotional order
+                  </button>
+                </div>
+              ) : (
+                <span />
+              )}
+              {kit.adSets.length > 1 && (
+                <div className="flex gap-3 text-xs font-medium">
+                  <button
+                    onClick={() => setCollapsed(new Set())}
+                    className="text-orange-600 hover:underline dark:text-orange-400"
+                  >
+                    Expand all
+                  </button>
+                  <button
+                    onClick={() => setCollapsed(new Set(kit.adSets.map((_, i) => i)))}
+                    className="text-orange-600 hover:underline dark:text-orange-400"
+                  >
+                    Collapse all
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {adSetOrder === "emotional" && (
+              <p className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">
+                Sorted from the most contracted assigned tone to the most expanded — the sequence to actually
+                show a client as they move through it.
+                {unassignedCount > 0 &&
+                  ` ${unassignedCount} ad set${unassignedCount > 1 ? "s have" : " has"} no tone assigned and ${
+                    unassignedCount > 1 ? "sort" : "sorts"
+                  } last.`}
+              </p>
             )}
+
             <div className="space-y-4">
-              {kit.adSets.map((ad, i) => (
+              {orderedAdSets.map(({ ad, i }, position) => (
                 <AdSetCard
                   key={i}
                   index={i}
+                  displayNumber={adSetOrder === "emotional" ? position + 1 : undefined}
                   ad={ad}
                   originalAd={originalKit?.adSets[i]}
                   onFieldEdit={onFieldEdit}
-                  emotionLabel={angleEmotions?.[ad.angle]}
+                  emotionLabel={angleEmotions?.[ad.angle]?.label}
                   expanded={!collapsed.has(i)}
                   onToggleExpanded={() => toggleAdSet(i)}
                 />

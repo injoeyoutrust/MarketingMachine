@@ -24,7 +24,7 @@ import {
   type IntakeFields,
 } from "@/lib/intakeFields";
 import type { SavedRun, CampaignKit } from "@/lib/types";
-import { stripEmotionPoints, type Style } from "@/lib/styleLibrary";
+import { stripEmotionPoints, getEmotionDevelopmentRank, type Style } from "@/lib/styleLibrary";
 
 const DEFAULT_ANGLE_IDS = [
   "identity-mirror",
@@ -49,7 +49,10 @@ function withEmotion(angle: Style, emotion: Style | undefined): Style {
   };
 }
 
-function angleEmotionEntries(run: SavedRun, styles: Style[]): { angleName: string; emotionName: string }[] {
+function angleEmotionEntries(
+  run: SavedRun,
+  styles: Style[]
+): { angleName: string; emotionName: string; rank: number }[] {
   const map = decodeAngleEmotions(run.fields[ANGLE_EMOTIONS_KEY]);
   return Object.entries(map)
     .map(([angleId, emotionId]) => {
@@ -59,20 +62,26 @@ function angleEmotionEntries(run: SavedRun, styles: Style[]): { angleName: strin
       const angleName = angleId === "pure-push" ? run.adAngleNames[0] : styles.find((s) => s.id === angleId)?.name;
       const emotion = styles.find((s) => s.id === emotionId);
       if (!angleName || !emotion) return null;
-      return { angleName, emotionName: stripEmotionPoints(emotion.name) };
+      return {
+        angleName,
+        emotionName: stripEmotionPoints(emotion.name),
+        rank: getEmotionDevelopmentRank(emotion.id),
+      };
     })
-    .filter((e): e is { angleName: string; emotionName: string } => Boolean(e));
+    .filter((e): e is { angleName: string; emotionName: string; rank: number } => Boolean(e));
 }
 
-/** Angle name -> emotion display name, for badges on each ad set's card. */
-function angleEmotionsByName(run: SavedRun, styles: Style[]): Record<string, string> {
-  return Object.fromEntries(angleEmotionEntries(run, styles).map((e) => [e.angleName, e.emotionName]));
+/** Angle name -> {emotion display name, ascending development rank}, for badges and emotional-order sorting. */
+function angleEmotionsByName(run: SavedRun, styles: Style[]): Record<string, { label: string; rank: number }> {
+  return Object.fromEntries(
+    angleEmotionEntries(run, styles).map((e) => [e.angleName, { label: e.emotionName, rank: e.rank }])
+  );
 }
 
 /** "Identity mirror (Fear) · Cost of inaction (no tone)" for a run's header — every angle shown, tone or not. */
 function describeAngleEmotions(run: SavedRun, styles: Style[]): string[] {
   const byName = angleEmotionsByName(run, styles);
-  return run.adAngleNames.map((name) => (byName[name] ? `${name} (${byName[name]})` : name));
+  return run.adAngleNames.map((name) => (byName[name] ? `${name} (${byName[name].label})` : name));
 }
 
 type Panel = "runs" | "library";

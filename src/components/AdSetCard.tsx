@@ -19,6 +19,7 @@ const BEAT_COLORS: Record<string, string> = {
 
 export function AdSetCard({
   index,
+  displayNumber,
   ad,
   originalAd,
   onFieldEdit,
@@ -26,7 +27,10 @@ export function AdSetCard({
   expanded,
   onToggleExpanded,
 }: {
+  /** True position in kit.adSets — used for edit paths ("adSets.{index}...."). Never changes with display order. */
   index: number;
+  /** Position to show in the numbered badge (e.g. when reordered by emotional development rank). Defaults to index + 1. */
+  displayNumber?: number;
   ad: AdSet;
   /** The frozen AI-generated version of this ad, for "edited" indicators — editing is disabled if omitted. */
   originalAd?: AdSet;
@@ -73,7 +77,7 @@ export function AdSetCard({
             <path d="M9 6l6 6-6 6" />
           </svg>
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-[0.7rem] font-bold text-white dark:bg-neutral-100 dark:text-neutral-900">
-            {index + 1}
+            {displayNumber ?? index + 1}
           </span>
           <h3 className="truncate text-base font-semibold text-neutral-900 dark:text-neutral-100">{ad.angle}</h3>
         </div>

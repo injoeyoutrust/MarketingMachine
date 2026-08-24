@@ -458,6 +458,19 @@ export function sortEmotionStyles(styles: Style[]): Style[] {
   return [...styles].sort((a, b) => rank(a.id) - rank(b.id));
 }
 
+/**
+ * Ascending position on the scale — 0 = Shame (most contracted), 16 =
+ * Enlightenment (most expanded). This is the reverse of EMOTION_DISPLAY_ORDER
+ * (which runs top-to-bottom, Enlightenment first, to match the reference
+ * chart for browsing) — a client's actual emotional *development* runs the
+ * other way, starting from wherever they really are and moving up. Unknown
+ * ids (custom user-added emotions) rank last, same convention as sortEmotionStyles.
+ */
+export function getEmotionDevelopmentRank(id: string): number {
+  const i = EMOTION_DISPLAY_ORDER.indexOf(id);
+  return i === -1 ? Number.MAX_SAFE_INTEGER : EMOTION_DISPLAY_ORDER.length - 1 - i;
+}
+
 export function seedStyles(): Style[] {
   return [
     ...DEFAULT_AD_ANGLES.map((s) => ({ ...s, examples: [] as StyleExample[] })),
