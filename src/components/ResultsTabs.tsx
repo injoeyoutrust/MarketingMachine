@@ -35,7 +35,17 @@ export function ResultsTabs({
   angleEmotions?: Record<string, string>;
 }) {
   const [active, setActive] = useState<TabKey>("extraction");
+  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const editable = Boolean(originalKit && onFieldEdit);
+
+  function toggleAdSet(i: number) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  }
 
   return (
     <div>
@@ -137,17 +147,37 @@ export function ResultsTabs({
         )}
 
         {active === "adSets" && (
-          <div className="space-y-6">
-            {kit.adSets.map((ad, i) => (
-              <AdSetCard
-                key={i}
-                index={i}
-                ad={ad}
-                originalAd={originalKit?.adSets[i]}
-                onFieldEdit={onFieldEdit}
-                emotionLabel={angleEmotions?.[ad.angle]}
-              />
-            ))}
+          <div>
+            {kit.adSets.length > 1 && (
+              <div className="mb-3 flex justify-end gap-3 text-xs font-medium">
+                <button
+                  onClick={() => setCollapsed(new Set())}
+                  className="text-orange-600 hover:underline dark:text-orange-400"
+                >
+                  Expand all
+                </button>
+                <button
+                  onClick={() => setCollapsed(new Set(kit.adSets.map((_, i) => i)))}
+                  className="text-orange-600 hover:underline dark:text-orange-400"
+                >
+                  Collapse all
+                </button>
+              </div>
+            )}
+            <div className="space-y-4">
+              {kit.adSets.map((ad, i) => (
+                <AdSetCard
+                  key={i}
+                  index={i}
+                  ad={ad}
+                  originalAd={originalKit?.adSets[i]}
+                  onFieldEdit={onFieldEdit}
+                  emotionLabel={angleEmotions?.[ad.angle]}
+                  expanded={!collapsed.has(i)}
+                  onToggleExpanded={() => toggleAdSet(i)}
+                />
+              ))}
+            </div>
           </div>
         )}
 
