@@ -6,6 +6,7 @@ import { IntakeForm, type IntakeMode } from "@/components/IntakeForm";
 import { StyleSelector } from "@/components/StyleSelector";
 import { StyleLibrary } from "@/components/StyleLibrary";
 import { ResultsTabs } from "@/components/ResultsTabs";
+import { OriginalEntryModal } from "@/components/OriginalEntryModal";
 import { loadRuns, saveRun, deleteRun } from "@/lib/storage";
 import { loadStyles } from "@/lib/styleStorage";
 import {
@@ -83,6 +84,7 @@ export default function Home() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [panel, setPanel] = useState<Panel>("runs");
   const [stage, setStage] = useState<Stage>("form");
+  const [showOriginalEntry, setShowOriginalEntry] = useState(false);
 
   const [label, setLabel] = useState("");
   const [mode, setMode] = useState<IntakeMode>("quick");
@@ -126,12 +128,14 @@ export default function Home() {
     setFields(emptyIntakeFields());
     setSelectedAngleIds(DEFAULT_ANGLE_IDS);
     setAngleEmotionIds(Object.fromEntries(DEFAULT_ANGLE_IDS.map((id) => [id, DEFAULT_EMOTION_ID])));
+    setShowOriginalEntry(false);
     setError(null);
   }
 
   function handleSelect(id: string) {
     setPanel("runs");
     setActiveId(id);
+    setShowOriginalEntry(false);
     setError(null);
   }
 
@@ -377,16 +381,27 @@ export default function Home() {
                     {activeRun.vslStyleName}
                   </p>
                 </div>
-                <button
-                  onClick={() => handleEditIntake(activeRun)}
-                  className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
-                >
-                  Edit intake &amp; regenerate
-                </button>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    onClick={() => setShowOriginalEntry(true)}
+                    className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                  >
+                    View original entry
+                  </button>
+                  <button
+                    onClick={() => handleEditIntake(activeRun)}
+                    className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                  >
+                    Edit intake &amp; regenerate
+                  </button>
+                </div>
               </div>
               <div className="mx-auto max-w-5xl">
                 <ResultsTabs kit={activeRun.kit} angleEmotions={angleEmotionsByName(activeRun, styles)} />
               </div>
+              {showOriginalEntry && (
+                <OriginalEntryModal run={activeRun} onClose={() => setShowOriginalEntry(false)} />
+              )}
             </div>
           ) : stage === "form" ? (
             <IntakeForm
