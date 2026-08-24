@@ -71,9 +71,17 @@ and action have to be re-worded every time.
    the intake plus an ANGLE BRIEF, FUNNEL BRIEF, and VSL BRIEF to Claude,
    forcing a structured tool call (`deliver_campaign_kit`) so the response
    comes back as clean JSON instead of prose you'd have to parse by hand.
-4. **Review** — results render in tabs (Extraction, Ad Sets, Opt-in,
+4. **Review & edit** — results render in tabs (Extraction, Ad Sets, Opt-in,
    Thank-You, VSL, SMS, Email, Ops Plan, Flags), each field with its own copy
-   button. Runs save to Supabase and list in the sidebar.
+   button — and, everywhere except Flags, an **Edit** button too. Editing a
+   field never touches what Claude actually generated:
+   - The AI output is frozen at creation (`original_kit` in the DB) and never
+     changes again. An edited field shows a small "edited" badge next to its
+     label — click it to see the original inline.
+   - Every edit appends one entry to a ledger (`edit_ledger`) — old value,
+     new value, timestamp. Click **Edit history** in the run header for the
+     full chronological list.
+   Runs save to Supabase and list in the sidebar.
 
 ### Style library
 

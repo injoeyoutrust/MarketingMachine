@@ -122,6 +122,15 @@ export const TAB_LABELS: Record<TabKey, string> = {
   flags: "Flags",
 };
 
+export interface EditLedgerEntry {
+  id: string;
+  path: string;
+  fieldLabel: string;
+  oldValue: string;
+  newValue: string;
+  editedAt: string;
+}
+
 export interface SavedRun {
   id: string;
   label: string;
@@ -131,5 +140,10 @@ export interface SavedRun {
   adAngleNames: string[];
   funnelStyleName: string;
   vslStyleName: string;
+  /** Current content — reflects any edits made after generation. */
   kit: CampaignKit;
+  /** Frozen snapshot of exactly what Claude generated, taken once at creation. Never mutated by edits. */
+  originalKit: CampaignKit;
+  /** Every edit made to `kit` after generation, oldest first. */
+  editLedger: EditLedgerEntry[];
 }

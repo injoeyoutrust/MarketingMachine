@@ -19,15 +19,23 @@ const TAB_ORDER: TabKey[] = [
   "flags",
 ];
 
+export type FieldEditFn = (path: string, label: string, newValue: string | string[]) => Promise<void>;
+
 export function ResultsTabs({
   kit,
+  originalKit,
+  onFieldEdit,
   angleEmotions,
 }: {
   kit: CampaignKit;
+  /** The frozen AI-generated snapshot, for "edited" indicators — editing is disabled if omitted. */
+  originalKit?: CampaignKit;
+  onFieldEdit?: FieldEditFn;
   /** Angle name -> emotion display name (e.g. "Grief"), for ad sets that had one assigned. */
   angleEmotions?: Record<string, string>;
 }) {
   const [active, setActive] = useState<TabKey>("extraction");
+  const editable = Boolean(originalKit && onFieldEdit);
 
   return (
     <div>
@@ -55,63 +63,228 @@ export function ResultsTabs({
       <div className="space-y-4">
         {active === "extraction" && (
           <Card title="Extraction block">
-            <CopyListField label="Verbatim language" items={kit.extraction.verbatimLanguage} />
-            <CopyField label="Central reframe" value={kit.extraction.centralReframe} />
-            <CopyListField label="Proof stack" items={kit.extraction.proofStack} />
-            <CopyField label="Before state" value={kit.extraction.beforeState} />
-            <CopyField label="After state" value={kit.extraction.afterState} />
-            <CopyListField label="Failed alternatives" items={kit.extraction.failedAlternatives} />
-            <CopyListField label="Objections" items={kit.extraction.objections} />
-            <CopyListField label="False beliefs" items={kit.extraction.falseBeliefs} />
-            <CopyField label="Voice" value={kit.extraction.voice} />
-            <CopyListField label="Personas" items={kit.extraction.personas} />
+            <CopyListField
+              label="Verbatim language"
+              items={kit.extraction.verbatimLanguage}
+              path={editable ? "extraction.verbatimLanguage" : undefined}
+              onSave={onFieldEdit}
+              originalItems={originalKit?.extraction.verbatimLanguage}
+            />
+            <CopyField
+              label="Central reframe"
+              value={kit.extraction.centralReframe}
+              path={editable ? "extraction.centralReframe" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.extraction.centralReframe}
+            />
+            <CopyListField
+              label="Proof stack"
+              items={kit.extraction.proofStack}
+              path={editable ? "extraction.proofStack" : undefined}
+              onSave={onFieldEdit}
+              originalItems={originalKit?.extraction.proofStack}
+            />
+            <CopyField
+              label="Before state"
+              value={kit.extraction.beforeState}
+              path={editable ? "extraction.beforeState" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.extraction.beforeState}
+            />
+            <CopyField
+              label="After state"
+              value={kit.extraction.afterState}
+              path={editable ? "extraction.afterState" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.extraction.afterState}
+            />
+            <CopyListField
+              label="Failed alternatives"
+              items={kit.extraction.failedAlternatives}
+              path={editable ? "extraction.failedAlternatives" : undefined}
+              onSave={onFieldEdit}
+              originalItems={originalKit?.extraction.failedAlternatives}
+            />
+            <CopyListField
+              label="Objections"
+              items={kit.extraction.objections}
+              path={editable ? "extraction.objections" : undefined}
+              onSave={onFieldEdit}
+              originalItems={originalKit?.extraction.objections}
+            />
+            <CopyListField
+              label="False beliefs"
+              items={kit.extraction.falseBeliefs}
+              path={editable ? "extraction.falseBeliefs" : undefined}
+              onSave={onFieldEdit}
+              originalItems={originalKit?.extraction.falseBeliefs}
+            />
+            <CopyField
+              label="Voice"
+              value={kit.extraction.voice}
+              path={editable ? "extraction.voice" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.extraction.voice}
+            />
+            <CopyListField
+              label="Personas"
+              items={kit.extraction.personas}
+              path={editable ? "extraction.personas" : undefined}
+              onSave={onFieldEdit}
+              originalItems={originalKit?.extraction.personas}
+            />
           </Card>
         )}
 
         {active === "adSets" && (
           <div className="space-y-6">
             {kit.adSets.map((ad, i) => (
-              <AdSetCard key={i} index={i} ad={ad} emotionLabel={angleEmotions?.[ad.angle]} />
+              <AdSetCard
+                key={i}
+                index={i}
+                ad={ad}
+                originalAd={originalKit?.adSets[i]}
+                onFieldEdit={onFieldEdit}
+                emotionLabel={angleEmotions?.[ad.angle]}
+              />
             ))}
           </div>
         )}
 
         {active === "optIn" && (
           <Card title="Opt-in page">
-            <CopyField label="Eyebrow" value={kit.optIn.eyebrow} />
-            <CopyField label="Hook headline" value={kit.optIn.hookHeadline} />
-            <CopyField label="Sub-headline" value={kit.optIn.subHeadline} />
-            <CopyListField label="Bullets" items={kit.optIn.bullets} />
-            <CopyField label="CTA button" value={kit.optIn.ctaButton} />
-            <CopyField label="Micro-trust line" value={kit.optIn.microTrust} />
-            <CopyField label="Wireframe note" value={kit.optIn.wireframeNote} />
+            <CopyField
+              label="Eyebrow"
+              value={kit.optIn.eyebrow}
+              path={editable ? "optIn.eyebrow" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.optIn.eyebrow}
+            />
+            <CopyField
+              label="Hook headline"
+              value={kit.optIn.hookHeadline}
+              path={editable ? "optIn.hookHeadline" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.optIn.hookHeadline}
+            />
+            <CopyField
+              label="Sub-headline"
+              value={kit.optIn.subHeadline}
+              path={editable ? "optIn.subHeadline" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.optIn.subHeadline}
+            />
+            <CopyListField
+              label="Bullets"
+              items={kit.optIn.bullets}
+              path={editable ? "optIn.bullets" : undefined}
+              onSave={onFieldEdit}
+              originalItems={originalKit?.optIn.bullets}
+            />
+            <CopyField
+              label="CTA button"
+              value={kit.optIn.ctaButton}
+              path={editable ? "optIn.ctaButton" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.optIn.ctaButton}
+            />
+            <CopyField
+              label="Micro-trust line"
+              value={kit.optIn.microTrust}
+              path={editable ? "optIn.microTrust" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.optIn.microTrust}
+            />
+            <CopyField
+              label="Wireframe note"
+              value={kit.optIn.wireframeNote}
+              path={editable ? "optIn.wireframeNote" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.optIn.wireframeNote}
+            />
           </Card>
         )}
 
         {active === "thankYou" && (
           <Card title="Thank-you page">
-            <CopyField label="Headline" value={kit.thankYou.headline} />
-            <CopyField label="Confirmation line" value={kit.thankYou.confirmationLine} />
-            <CopyField label="You're registered video script" value={kit.thankYou.videoScript} />
-            <CopyField label="CTA" value={kit.thankYou.cta} />
-            <CopyField label="Fallback line" value={kit.thankYou.fallbackLine} />
-            <CopyField label="Wireframe note" value={kit.thankYou.wireframeNote} />
+            <CopyField
+              label="Headline"
+              value={kit.thankYou.headline}
+              path={editable ? "thankYou.headline" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.thankYou.headline}
+            />
+            <CopyField
+              label="Confirmation line"
+              value={kit.thankYou.confirmationLine}
+              path={editable ? "thankYou.confirmationLine" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.thankYou.confirmationLine}
+            />
+            <CopyField
+              label="You're registered video script"
+              value={kit.thankYou.videoScript}
+              path={editable ? "thankYou.videoScript" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.thankYou.videoScript}
+            />
+            <CopyField
+              label="CTA"
+              value={kit.thankYou.cta}
+              path={editable ? "thankYou.cta" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.thankYou.cta}
+            />
+            <CopyField
+              label="Fallback line"
+              value={kit.thankYou.fallbackLine}
+              path={editable ? "thankYou.fallbackLine" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.thankYou.fallbackLine}
+            />
+            <CopyField
+              label="Wireframe note"
+              value={kit.thankYou.wireframeNote}
+              path={editable ? "thankYou.wireframeNote" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.thankYou.wireframeNote}
+            />
           </Card>
         )}
 
         {active === "vsl" && (
           <Card title="Video sales letter (4-6 min)">
             {kit.vsl.sections.map((s, i) => (
-              <CopyField key={i} label={`${s.timestamp} — ${s.name}`} value={s.script} />
+              <CopyField
+                key={i}
+                label={`${s.timestamp} — ${s.name}`}
+                value={s.script}
+                path={editable ? `vsl.sections.${i}.script` : undefined}
+                onSave={onFieldEdit}
+                originalValue={originalKit?.vsl.sections[i]?.script}
+              />
             ))}
-            <CopyField label="Wireframe note" value={kit.vsl.wireframeNote} />
+            <CopyField
+              label="Wireframe note"
+              value={kit.vsl.wireframeNote}
+              path={editable ? "vsl.wireframeNote" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.vsl.wireframeNote}
+            />
           </Card>
         )}
 
         {active === "sms" && (
           <Card title="SMS sequence (3 days)">
             {kit.sms.map((m, i) => (
-              <CopyField key={i} label={`Day ${m.day}`} value={m.message} />
+              <CopyField
+                key={i}
+                label={`Day ${m.day}`}
+                value={m.message}
+                path={editable ? `sms.${i}.message` : undefined}
+                onSave={onFieldEdit}
+                originalValue={originalKit?.sms[i]?.message}
+              />
             ))}
           </Card>
         )}
@@ -119,22 +292,55 @@ export function ResultsTabs({
         {active === "email" && (
           <Card title="Email sequence (7 days)">
             {kit.email.map((e, i) => (
-              <CopyField key={i} label={`Day ${e.day} — ${e.subject}`} value={e.body} />
+              <div key={i} className="border-b border-neutral-200 pb-1 last:border-b-0 dark:border-neutral-800">
+                <p className="pt-3 text-[0.7rem] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+                  Day {e.day}
+                </p>
+                <CopyField
+                  label="Subject"
+                  value={e.subject}
+                  path={editable ? `email.${i}.subject` : undefined}
+                  onSave={onFieldEdit}
+                  originalValue={originalKit?.email[i]?.subject}
+                />
+                <CopyField
+                  label="Body"
+                  value={e.body}
+                  path={editable ? `email.${i}.body` : undefined}
+                  onSave={onFieldEdit}
+                  originalValue={originalKit?.email[i]?.body}
+                />
+              </div>
             ))}
           </Card>
         )}
 
         {active === "opsPlan" && (
           <Card title="12-week ops plan">
-            <CopyField label="Launch date" value={kit.opsPlan.launchDate} />
-            {kit.opsPlan.weeks.map((w) => (
+            <CopyField
+              label="Launch date"
+              value={kit.opsPlan.launchDate}
+              path={editable ? "opsPlan.launchDate" : undefined}
+              onSave={onFieldEdit}
+              originalValue={originalKit?.opsPlan.launchDate}
+            />
+            {kit.opsPlan.weeks.map((w, i) => (
               <CopyField
                 key={w.week}
                 label={`Week ${w.week} — ${w.dates} — ${w.focus}`}
                 value={w.action}
+                path={editable ? `opsPlan.weeks.${i}.action` : undefined}
+                onSave={onFieldEdit}
+                originalValue={originalKit?.opsPlan.weeks[i]?.action}
               />
             ))}
-            <CopyListField label="Scoreboard metrics" items={kit.opsPlan.metrics} />
+            <CopyListField
+              label="Scoreboard metrics"
+              items={kit.opsPlan.metrics}
+              path={editable ? "opsPlan.metrics" : undefined}
+              onSave={onFieldEdit}
+              originalItems={originalKit?.opsPlan.metrics}
+            />
           </Card>
         )}
 

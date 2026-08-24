@@ -7,7 +7,8 @@ import { StyleSelector } from "@/components/StyleSelector";
 import { StyleLibrary } from "@/components/StyleLibrary";
 import { ResultsTabs } from "@/components/ResultsTabs";
 import { OriginalEntryModal } from "@/components/OriginalEntryModal";
-import { loadRuns, saveRun, deleteRun } from "@/lib/storage";
+import { EditLedgerModal } from "@/components/EditLedgerModal";
+import { loadRuns, saveRun, deleteRun, editRunField } from "@/lib/storage";
 import { loadStyles } from "@/lib/styleStorage";
 import {
   emptyIntakeFields,
@@ -85,6 +86,7 @@ export default function Home() {
   const [panel, setPanel] = useState<Panel>("runs");
   const [stage, setStage] = useState<Stage>("form");
   const [showOriginalEntry, setShowOriginalEntry] = useState(false);
+  const [showEditLedger, setShowEditLedger] = useState(false);
 
   const [label, setLabel] = useState("");
   const [mode, setMode] = useState<IntakeMode>("quick");
@@ -129,6 +131,7 @@ export default function Home() {
     setSelectedAngleIds(DEFAULT_ANGLE_IDS);
     setAngleEmotionIds(Object.fromEntries(DEFAULT_ANGLE_IDS.map((id) => [id, DEFAULT_EMOTION_ID])));
     setShowOriginalEntry(false);
+    setShowEditLedger(false);
     setError(null);
   }
 
@@ -136,6 +139,7 @@ export default function Home() {
     setPanel("runs");
     setActiveId(id);
     setShowOriginalEntry(false);
+    setShowEditLedger(false);
     setError(null);
   }
 
@@ -185,6 +189,16 @@ export default function Home() {
     await deleteRun(id);
     setRuns(await loadRuns());
     if (activeId === id) handleNew();
+  }
+
+  async function handleFieldEdit(path: string, fieldLabel: string, newValue: string | string[]) {
+    if (!activeId) return;
+    const updated = await editRunField(activeId, path, fieldLabel, newValue);
+    if (!updated) {
+      setError("Couldn't save that edit — check the Supabase connection and try again.");
+      return;
+    }
+    setRuns((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
   }
 
   function toggleAngle(id: string) {
@@ -389,6 +403,17 @@ export default function Home() {
                     View original entry
                   </button>
                   <button
+                    onClick={() => setShowEditLedger(true)}
+                    className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                  >
+                    Edit history
+                    {activeRun.editLedger.length > 0 && (
+                      <span className="ml-1.5 rounded-full bg-orange-500 px-1.5 py-0.5 text-[0.65rem] font-bold text-white">
+                        {activeRun.editLedger.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
                     onClick={() => handleEditIntake(activeRun)}
                     className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
                   >
@@ -397,10 +422,18 @@ export default function Home() {
                 </div>
               </div>
               <div className="mx-auto max-w-5xl">
-                <ResultsTabs kit={activeRun.kit} angleEmotions={angleEmotionsByName(activeRun, styles)} />
+                <ResultsTabs
+                  kit={activeRun.kit}
+                  originalKit={activeRun.originalKit}
+                  onFieldEdit={handleFieldEdit}
+                  angleEmotions={angleEmotionsByName(activeRun, styles)}
+                />
               </div>
               {showOriginalEntry && (
                 <OriginalEntryModal run={activeRun} onClose={() => setShowOriginalEntry(false)} />
+              )}
+              {showEditLedger && (
+                <EditLedgerModal run={activeRun} onClose={() => setShowEditLedger(false)} />
               )}
             </div>
           ) : stage === "form" ? (

@@ -44,6 +44,8 @@ export interface RunRow {
   funnel_style_name: string;
   vsl_style_name: string;
   kit: unknown;
+  original_kit: unknown;
+  edit_ledger: unknown;
 }
 
 export function runRowToSavedRun(row: RunRow): SavedRun {
@@ -57,5 +59,9 @@ export function runRowToSavedRun(row: RunRow): SavedRun {
     funnelStyleName: row.funnel_style_name ?? "",
     vslStyleName: row.vsl_style_name ?? "",
     kit: row.kit as SavedRun["kit"],
+    // Older rows saved before edit tracking existed have no original_kit —
+    // fall back to kit itself so the UI still has something to compare against.
+    originalKit: (row.original_kit as SavedRun["originalKit"]) ?? (row.kit as SavedRun["originalKit"]),
+    editLedger: Array.isArray(row.edit_ledger) ? (row.edit_ledger as SavedRun["editLedger"]) : [],
   };
 }

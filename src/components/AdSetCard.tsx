@@ -3,6 +3,7 @@
 import { CopyField } from "@/components/CopyField";
 import { EmotionBadge } from "@/components/Card";
 import type { AdSet } from "@/lib/types";
+import type { FieldEditFn } from "@/components/ResultsTabs";
 
 // Fixed per beat (not per card), light to dark following the beat's place
 // in the arc — Hook is always the lightest, CTA always the darkest,
@@ -18,18 +19,25 @@ const BEAT_COLORS: Record<string, string> = {
 export function AdSetCard({
   index,
   ad,
+  originalAd,
+  onFieldEdit,
   emotionLabel,
 }: {
   index: number;
   ad: AdSet;
+  /** The frozen AI-generated version of this ad, for "edited" indicators — editing is disabled if omitted. */
+  originalAd?: AdSet;
+  onFieldEdit?: FieldEditFn;
   emotionLabel?: string;
 }) {
-  const beats: { label: keyof typeof BEAT_COLORS; value: string }[] = [
-    { label: "Hook", value: ad.videoScript.hook },
-    { label: "Mirror", value: ad.videoScript.mirror },
-    { label: "Shift", value: ad.videoScript.shift },
-    { label: "Proof", value: ad.videoScript.proof },
-    { label: "CTA", value: ad.videoScript.cta },
+  const editable = Boolean(originalAd && onFieldEdit);
+  const prefix = `adSets.${index}`;
+  const beats: { label: keyof typeof BEAT_COLORS; key: keyof AdSet["videoScript"]; value: string }[] = [
+    { label: "Hook", key: "hook", value: ad.videoScript.hook },
+    { label: "Mirror", key: "mirror", value: ad.videoScript.mirror },
+    { label: "Shift", key: "shift", value: ad.videoScript.shift },
+    { label: "Proof", key: "proof", value: ad.videoScript.proof },
+    { label: "CTA", key: "cta", value: ad.videoScript.cta },
   ];
 
   return (
@@ -48,9 +56,27 @@ export function AdSetCard({
         <p className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
           Ad copy
         </p>
-        <CopyField label="Primary text" value={ad.primaryText} />
-        <CopyField label="Headline" value={ad.headline} />
-        <CopyField label="Description" value={ad.description} />
+        <CopyField
+          label="Primary text"
+          value={ad.primaryText}
+          path={editable ? `${prefix}.primaryText` : undefined}
+          onSave={onFieldEdit}
+          originalValue={originalAd?.primaryText}
+        />
+        <CopyField
+          label="Headline"
+          value={ad.headline}
+          path={editable ? `${prefix}.headline` : undefined}
+          onSave={onFieldEdit}
+          originalValue={originalAd?.headline}
+        />
+        <CopyField
+          label="Description"
+          value={ad.description}
+          path={editable ? `${prefix}.description` : undefined}
+          onSave={onFieldEdit}
+          originalValue={originalAd?.description}
+        />
       </div>
 
       <div className="border-t border-neutral-200 bg-neutral-50 px-5 py-3 dark:border-neutral-800 dark:bg-neutral-950/50">
@@ -58,7 +84,15 @@ export function AdSetCard({
           Video script (45-60s)
         </p>
         {beats.map((b) => (
-          <CopyField key={b.label} label={b.label} value={b.value} accent={BEAT_COLORS[b.label]} />
+          <CopyField
+            key={b.label}
+            label={b.label}
+            value={b.value}
+            accent={BEAT_COLORS[b.label]}
+            path={editable ? `${prefix}.videoScript.${b.key}` : undefined}
+            onSave={onFieldEdit}
+            originalValue={originalAd?.videoScript[b.key]}
+          />
         ))}
       </div>
     </div>
