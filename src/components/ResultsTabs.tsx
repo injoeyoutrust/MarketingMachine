@@ -3,8 +3,9 @@
 import { useState } from "react";
 import type { CampaignKit, TabKey } from "@/lib/types";
 import { TAB_LABELS } from "@/lib/types";
-import { Card, EmotionBadge } from "@/components/Card";
+import { Card } from "@/components/Card";
 import { CopyField, CopyListField } from "@/components/CopyField";
+import { AdSetCard } from "@/components/AdSetCard";
 
 const TAB_ORDER: TabKey[] = [
   "extraction",
@@ -67,28 +68,13 @@ export function ResultsTabs({
           </Card>
         )}
 
-        {active === "adSets" &&
-          kit.adSets.map((ad, i) => (
-            <Card
-              key={i}
-              title={ad.angle}
-              badge={angleEmotions?.[ad.angle] ? <EmotionBadge label={angleEmotions[ad.angle]} /> : undefined}
-            >
-              <CopyField label="Primary text" value={ad.primaryText} />
-              <CopyField label="Headline" value={ad.headline} />
-              <CopyField label="Description" value={ad.description} />
-              <div className="mt-3 border-t border-neutral-200 pt-2 dark:border-neutral-800">
-                <p className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                  Video script (45-60s)
-                </p>
-                <CopyField label="Hook" value={ad.videoScript.hook} />
-                <CopyField label="Mirror" value={ad.videoScript.mirror} />
-                <CopyField label="Shift" value={ad.videoScript.shift} />
-                <CopyField label="Proof" value={ad.videoScript.proof} />
-                <CopyField label="CTA" value={ad.videoScript.cta} />
-              </div>
-            </Card>
-          ))}
+        {active === "adSets" && (
+          <div className="space-y-6">
+            {kit.adSets.map((ad, i) => (
+              <AdSetCard key={i} index={i} ad={ad} emotionLabel={angleEmotions?.[ad.angle]} />
+            ))}
+          </div>
+        )}
 
         {active === "optIn" && (
           <Card title="Opt-in page">

@@ -6,10 +6,13 @@ export function CopyField({
   label,
   value,
   mono = false,
+  accent,
 }: {
   label: string;
   value: string;
   mono?: boolean;
+  /** Tailwind bg-color class (e.g. "bg-indigo-500") for a small dot before the label — used to color-code beats like Hook/Mirror/Shift/Proof/CTA consistently across cards. */
+  accent?: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -22,7 +25,8 @@ export function CopyField({
   return (
     <div className="border-b border-neutral-200 py-3 last:border-b-0 dark:border-neutral-800">
       <div className="mb-1 flex items-center justify-between gap-2">
-        <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+        <span className="flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+          {accent && <span className={`h-1.5 w-1.5 rounded-full ${accent}`} />}
           {label}
         </span>
         <button
