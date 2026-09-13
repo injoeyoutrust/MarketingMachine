@@ -159,3 +159,31 @@ If outputs start feeling repetitive again (identical Proof or CTA lines
 across ad sets), that's almost always the dedup instruction in the prompt not
 being followed strongly enough — tighten the language in `STEP 4` of
 `systemPrompt.ts` before touching anything else.
+
+## Funnel projects
+
+Open **Funnel Projects** in the sidebar (`/funnels`). Complete the shared full
+intake, then describe the idea, tone, and optional ad types for TOFO, MOFO, and
+BOFO. Save the project and generate its initial copy. Each level gets a base ad
+and its own SMS/email pool. Additional Quick Idea or Pure Push concepts produce
+one ad plus nurture messages for the selected level; the pools retain every
+contribution and its source. BOFO focuses on readiness with a secondary final
+CTA. This is a copy planning workspace, not an automated sending workflow.
+
+Apply `supabase/migrations/20260912000000_funnel_projects.sql` to the configured
+Supabase database before using this feature. It uses the existing server-side
+Supabase service role and Anthropic configuration. Saved projects and generated
+copy live in Supabase; the explicit setup draft button stores unfinished intake
+in the current browser. Initial generation saves one level at a time and can
+resume missing levels. The project brief is fixed when created; create a new
+project for a different master brief.
+
+Validation: `node --test tests/funnels.mjs`, `npm run lint`, and
+`npx tsc --noEmit`. A production build also needs access to Google Fonts, as used
+by the existing root layout.
+
+Apply `20260912000001_funnel_imports.sql` after the project migration to enable
+imports. Each level can import an existing saved campaign (all current ads, SMS,
+and email, including edits) or pasted concept copy with optional SMS/email.
+Imports are snapshots: changing the source campaign later does not change the
+funnel. Supplied text is preserved without AI generation or stage adaptation.
