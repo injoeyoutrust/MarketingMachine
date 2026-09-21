@@ -76,7 +76,7 @@ function PurePushPanel({
       </label>
       <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
         No angle picking, no funnel/VSL screen — this idea <em>is</em> the angle. The engine fits it
-        straight into Hook → Mirror → Shift → Proof → CTA as faithfully as it can, without remapping it
+        straight into your selected audience-specific script framework as faithfully as it can, without remapping it
         onto a different technique. Write it the way you&apos;d actually say it.
       </p>
       <textarea
@@ -164,7 +164,7 @@ export function IntakeForm({
             <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">New campaign kit</h2>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {mode === "quick" && "Quick idea — the engine fills gaps with flags, not guesses."}
-              {mode === "push" && "Pure push — your concept, straight into the five-beat structure."}
+              {mode === "push" && "Pure push — your concept, straight into the selected script framework."}
               {mode === "full" &&
                 `${filled} of ${total} fields answered — unanswered ones become flags, not invented copy.`}
             </p>

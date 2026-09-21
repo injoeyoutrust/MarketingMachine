@@ -187,3 +187,22 @@ imports. Each level can import an existing saved campaign (all current ads, SMS,
 and email, including edits) or pasted concept copy with optional SMS/email.
 Imports are snapshots: changing the source campaign later does not change the
 funnel. Supplied text is preserved without AI generation or stage adaptation.
+
+## Script Workshop and audience frameworks
+
+Open **Script Workshop** (`/scripts`) to choose Insider Reveal or Story-First
+Micro-Case for cold traffic, or HMSPC for warm/retargeted traffic. Write each
+beat yourself and choose **Edit & polish my script**. AI edits your draft and
+returns a separate polished version with editing/verification notes. The
+original stays intact. Each framework keeps its own draft, context, and result
+in this browser's local storage; these workshop drafts are not synced to
+Supabase. Supply existing brand/offer/proof context in the context field.
+
+Campaign generation now exposes framework, cold CTA test, and story voice
+choices. TOFO generation uses the selected cold framework; MOFO/BOFO use HMSPC.
+Cold scripts point to lead magnets and never invent example proof numbers,
+scarcity, testimonials, or assets. Missing facts are flagged. Existing saved
+scripts retain their labels and content. Framework metadata is stored alongside
+new ads in the existing JSON fields, so no database migration is needed.
+
+Run `node --test tests/*.mjs` for funnel validation and framework coverage.

@@ -24,6 +24,7 @@ export function Sidebar({
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
       <div className="space-y-1.5 p-3">
+        <Link href="/scripts" className="block w-full rounded-lg border border-orange-400 px-3 py-2 text-center text-sm font-semibold text-orange-600">Script Workshop →</Link>
         <Link href="/funnels" className="block w-full rounded-lg border border-orange-400 px-3 py-2 text-center text-sm font-semibold text-orange-600 dark:text-orange-400">Funnel Projects →</Link>
         <button
           onClick={onNew}

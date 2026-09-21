@@ -1,3 +1,4 @@
+import { FRAMEWORKS, SCRIPT_KEYS, type ScriptFramework } from "./scriptFrameworks";
 // JSON schema for the deliver_campaign_kit tool. Forcing Claude to call this
 // tool (instead of writing prose) is what makes the output reliably
 // parseable into the tabs the UI renders.
@@ -14,7 +15,7 @@ const videoScriptSchema = {
   required: ["hook", "mirror", "shift", "proof", "cta"],
 };
 
-export function buildCampaignKitTool(angleCount: number) {
+export function buildCampaignKitTool(angleCount: number, framework: ScriptFramework = "hmspc") {
   return {
     name: "deliver_campaign_kit",
     description:
@@ -63,7 +64,7 @@ export function buildCampaignKitTool(angleCount: number) {
             primaryText: { type: "string" },
             headline: { type: "string" },
             description: { type: "string" },
-            videoScript: videoScriptSchema,
+            videoScript: { ...videoScriptSchema, properties: Object.fromEntries(SCRIPT_KEYS.map((key, i) => [key, { type: "string", description: FRAMEWORKS[framework].labels[i] }])) },
           },
           required: ["angle", "primaryText", "headline", "description", "videoScript"],
         },

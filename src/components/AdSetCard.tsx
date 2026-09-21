@@ -1,5 +1,6 @@
 "use client";
 
+import { FRAMEWORKS, scriptBeats } from "@/lib/scriptFrameworks";
 import { useState } from "react";
 import { CopyField } from "@/components/CopyField";
 import { EmotionBadge } from "@/components/Card";
@@ -47,13 +48,7 @@ export function AdSetCard({
 
   const editable = Boolean(originalAd && onFieldEdit);
   const prefix = `adSets.${index}`;
-  const beats: { label: keyof typeof BEAT_COLORS; key: keyof AdSet["videoScript"]; value: string }[] = [
-    { label: "Hook", key: "hook", value: ad.videoScript.hook },
-    { label: "Mirror", key: "mirror", value: ad.videoScript.mirror },
-    { label: "Shift", key: "shift", value: ad.videoScript.shift },
-    { label: "Proof", key: "proof", value: ad.videoScript.proof },
-    { label: "CTA", key: "cta", value: ad.videoScript.cta },
-  ];
+  const beats = scriptBeats(ad.videoScript, ad.scriptFramework);
 
   return (
     <div className="overflow-hidden rounded-xl border border-l-4 border-neutral-200 border-l-orange-500 bg-white shadow-sm dark:border-neutral-800 dark:border-l-orange-500">
@@ -115,7 +110,7 @@ export function AdSetCard({
 
           <div className="border-t border-neutral-200 bg-neutral-50 px-5 py-3 dark:border-neutral-800 dark:bg-neutral-950/50">
             <p className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
-              Video script (45-60s)
+              {FRAMEWORKS[ad.scriptFramework ?? "hmspc"].name} ({FRAMEWORKS[ad.scriptFramework ?? "hmspc"].runtime})
             </p>
             {beats.map((b) => (
               <CopyField

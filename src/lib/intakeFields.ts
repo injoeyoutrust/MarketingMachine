@@ -250,8 +250,7 @@ ${idea.trim()}
 
 This concept is the campaign's one and only angle. Do not map it onto a
 different named technique and do not soften or generalize it. Your job is
-to fit THIS exact idea into the five-beat structure (Hook, Mirror, Shift,
-Proof, CTA) as faithfully as possible. Extract what facts you genuinely can
+to fit THIS exact idea into the selected audience-specific script framework as faithfully as possible. Extract what facts you genuinely can
 from it; anything it doesn't state — proof numbers, business name, pricing
 — goes on the flag sheet instead of being invented.`;
 }

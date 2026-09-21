@@ -47,7 +47,7 @@ export function validProject(value: unknown): value is Pick<FunnelProject, 'labe
 export function validCopy(value: unknown): value is FunnelCopy {
   if (!isRecord(value)) return false;
   const strings = (v: unknown, keys: string[]) => isRecord(v) && keys.every(k => typeof v[k] === 'string');
-  return Array.isArray(value.adSets) && value.adSets.length === 1 && value.adSets.every(ad => strings(ad, ['angle', 'primaryText', 'headline', 'description']) && strings(ad.videoScript, ['hook', 'mirror', 'shift', 'proof', 'cta'])) &&
+  return Array.isArray(value.adSets) && value.adSets.length === 1 && value.adSets.every(ad => (!ad?.scriptFramework || ['hmspc', 'insider', 'story'].includes(ad.scriptFramework)) && strings(ad, ['angle', 'primaryText', 'headline', 'description']) && strings(ad.videoScript, ['hook', 'mirror', 'shift', 'proof', 'cta'])) &&
     Array.isArray(value.sms) && value.sms.length > 0 && value.sms.every(s => strings(s, ['message']) && Number.isInteger(s.day)) &&
     Array.isArray(value.email) && value.email.length > 0 && value.email.every(e => strings(e, ['subject', 'body']) && Number.isInteger(e.day)) &&
     Array.isArray(value.flags) && value.flags.every(f => strings(f, ['issue', 'detail', 'resolveBy']));

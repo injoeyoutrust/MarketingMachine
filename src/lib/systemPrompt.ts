@@ -79,7 +79,7 @@ let the tone soften or dramatize the numbers.
 
 # STEP 2 — THE 5-BEAT ATOM
 
-Every piece of creative is these five beats. This is non-negotiable structure.
+For warm/retargeted audiences only, use these HMSPC beats. Cold traffic MUST follow the selected Insider Reveal or Story-First Micro-Case framework contract instead.
 
 HOOK    — their sentence, their words, in the first 2 seconds. No intro, no logo.
           Vary the MECHANISM per ad set: a direct quote, a scene/moment, a

@@ -7,6 +7,8 @@ export interface VideoScript {
 }
 
 export interface AdSet {
+  scriptFramework?: import("./scriptFrameworks").ScriptFramework;
+  scriptOptions?: import("./scriptFrameworks").ScriptOptions;
   angle: string;
   primaryText: string;
   headline: string;

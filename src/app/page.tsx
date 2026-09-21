@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ScriptFrameworkSelector } from "@/components/ScriptFrameworkSelector";
+import { DEFAULT_SCRIPT_OPTIONS, validScriptOptions, type ScriptOptions } from "@/lib/scriptFrameworks";
 import { Sidebar } from "@/components/Sidebar";
 import { IntakeForm, type IntakeMode } from "@/components/IntakeForm";
 import { StyleSelector } from "@/components/StyleSelector";
@@ -88,6 +90,7 @@ type Panel = "runs" | "library";
 type Stage = "form" | "styles";
 
 export default function Home() {
+  const [scriptOptions, setScriptOptions] = useState<ScriptOptions>(DEFAULT_SCRIPT_OPTIONS);
   const [runs, setRuns] = useState<SavedRun[]>([]);
   const [styles, setStyles] = useState<Style[]>([]);
   const [initializing, setInitializing] = useState(true);
@@ -129,6 +132,7 @@ export default function Home() {
   }
 
   function handleNew() {
+    setScriptOptions(DEFAULT_SCRIPT_OPTIONS);
     setPanel("runs");
     setActiveId(null);
     setStage("form");
@@ -158,6 +162,8 @@ export default function Home() {
   }
 
   function handleEditIntake(run: SavedRun) {
+    const savedOptions = run.kit.adSets[0]?.scriptOptions;
+    setScriptOptions(validScriptOptions(savedOptions) ? savedOptions : { ...DEFAULT_SCRIPT_OPTIONS, framework: "hmspc" });
     setPanel("runs");
     setActiveId(null);
     setStage("form");
@@ -246,6 +252,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           intake: params.intake,
+          scriptOptions,
           adAngles: params.adAngles,
           funnelStyle: params.funnelStyle,
           vslStyle: params.vslStyle,
@@ -390,6 +397,7 @@ export default function Home() {
           </p>
         </header>
         <div className="p-6">
+          {panel === "runs" && !activeRun && <ScriptFrameworkSelector value={scriptOptions} onChange={setScriptOptions} disabled={loading} />}
           {panel === "library" ? (
             <StyleLibrary styles={styles} onChanged={refreshStyles} />
           ) : activeRun ? (

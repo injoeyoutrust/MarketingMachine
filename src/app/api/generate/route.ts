@@ -1,3 +1,4 @@
+import { DEFAULT_SCRIPT_OPTIONS, validScriptOptions, scriptBrief, type ScriptOptions } from "@/lib/scriptFrameworks";
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { CAMPAIGN_ENGINE_SYSTEM_PROMPT } from "@/lib/systemPrompt";
@@ -17,12 +18,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  let scriptOptions: ScriptOptions = DEFAULT_SCRIPT_OPTIONS;
   let intake: string;
   let adAngles: Style[];
   let funnelStyle: Style | null;
   let vslStyle: Style | null;
   try {
     const body = await req.json();
+    if (body.scriptOptions !== undefined && !validScriptOptions(body.scriptOptions)) return NextResponse.json({ error: "Invalid script options." }, { status: 400 });
+    scriptOptions = body.scriptOptions ?? DEFAULT_SCRIPT_OPTIONS;
     intake = body.intake;
     adAngles = Array.isArray(body.adAngles) ? body.adAngles : [];
     funnelStyle = body.funnelStyle ?? null;
@@ -92,8 +96,8 @@ export async function POST(req: NextRequest) {
     const stream = client.messages.stream({
       model: "claude-sonnet-5",
       max_tokens: computeMaxTokens(adAngles.length),
-      system: CAMPAIGN_ENGINE_SYSTEM_PROMPT,
-      tools: [buildCampaignKitTool(adAngles.length)],
+      system: CAMPAIGN_ENGINE_SYSTEM_PROMPT + "\n\n" + scriptBrief(scriptOptions),
+      tools: [buildCampaignKitTool(adAngles.length, scriptOptions.framework)],
       tool_choice: { type: "tool", name: "deliver_campaign_kit" },
       messages: [{ role: "user", content: userContent }],
     });
@@ -112,6 +116,7 @@ export async function POST(req: NextRequest) {
     }
 
     const kit = toolUse.input as CampaignKit;
+    kit.adSets = kit.adSets.map(ad => ({ ...ad, scriptFramework: scriptOptions.framework, scriptOptions }));
     return NextResponse.json({ kit });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error calling Claude.";
