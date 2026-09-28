@@ -7,6 +7,8 @@ export const STAGE_DESCRIPTIONS: Record<FunnelStage, string> = {
   MOFO: 'Build trust, explain the approach, and work through objections.',
   BOFO: 'Build confidence and readiness. Keep the final action secondary.',
 };
+/** Display spelling for each stage's campaign — the internal codes (TOFO/MOFO/BOFO) stay as-is in data and the DB check constraint. */
+export const STAGE_LABELS: Record<FunnelStage, string> = { TOFO: 'TOFU', MOFO: 'MOFU', BOFO: 'BOFU' };
 export interface StageBrief { idea: string; tone: string; adTypes: string }
 export interface FunnelProject {
   id: string;

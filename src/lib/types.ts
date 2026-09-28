@@ -148,4 +148,8 @@ export interface SavedRun {
   originalKit: CampaignKit;
   /** Every edit made to `kit` after generation, oldest first. */
   editLedger: EditLedgerEntry[];
+  /** The funnel set this ad is assigned into, or null if it's unassigned (sitting in the ad pool). */
+  funnelSetId: string | null;
+  /** Which of that funnel set's TOFU/MOFU/BOFU campaigns this ad belongs to. Null unless funnelSetId is set. */
+  stage: import("./funnels").FunnelStage | null;
 }

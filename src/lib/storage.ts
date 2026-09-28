@@ -1,4 +1,5 @@
 import type { SavedRun } from "./types";
+import type { FunnelStage } from "./funnels";
 
 export async function loadRuns(): Promise<SavedRun[]> {
   const res = await fetch("/api/runs");
@@ -8,7 +9,7 @@ export async function loadRuns(): Promise<SavedRun[]> {
 }
 
 export async function saveRun(
-  run: Omit<SavedRun, "id" | "createdAt" | "originalKit" | "editLedger">
+  run: Omit<SavedRun, "id" | "createdAt" | "originalKit" | "editLedger" | "funnelSetId" | "stage">
 ): Promise<SavedRun | null> {
   const res = await fetch("/api/runs", {
     method: "POST",
@@ -35,6 +36,22 @@ export async function editRunField(
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ path, fieldLabel, newValue }),
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.run as SavedRun;
+}
+
+/** Moves an ad into a funnel set's TOFU/MOFU/BOFU campaign, or pass nulls to send it back to the ad pool. */
+export async function assignRun(
+  runId: string,
+  funnelSetId: string | null,
+  stage: FunnelStage | null
+): Promise<SavedRun | null> {
+  const res = await fetch(`/api/runs/${runId}/assign`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ funnelSetId, stage }),
   });
   if (!res.ok) return null;
   const data = await res.json();

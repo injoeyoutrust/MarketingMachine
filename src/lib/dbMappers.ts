@@ -46,6 +46,8 @@ export interface RunRow {
   kit: unknown;
   original_kit: unknown;
   edit_ledger: unknown;
+  funnel_set_id: string | null;
+  stage: string | null;
 }
 
 export function runRowToSavedRun(row: RunRow): SavedRun {
@@ -63,5 +65,7 @@ export function runRowToSavedRun(row: RunRow): SavedRun {
     // fall back to kit itself so the UI still has something to compare against.
     originalKit: (row.original_kit as SavedRun["originalKit"]) ?? (row.kit as SavedRun["originalKit"]),
     editLedger: Array.isArray(row.edit_ledger) ? (row.edit_ledger as SavedRun["editLedger"]) : [],
+    funnelSetId: row.funnel_set_id ?? null,
+    stage: (row.stage as SavedRun["stage"]) ?? null,
   };
 }

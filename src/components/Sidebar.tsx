@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { SavedRun } from "@/lib/types";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { STAGE_LABELS } from "@/lib/funnels";
 
 export function Sidebar({
   runs,
@@ -25,12 +26,12 @@ export function Sidebar({
     <aside className="flex w-64 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
       <div className="space-y-1.5 p-3">
         <Link href="/scripts" className="block w-full rounded-lg border border-orange-400 px-3 py-2 text-center text-sm font-semibold text-orange-600">Script Workshop →</Link>
-        <Link href="/funnels" className="block w-full rounded-lg border border-orange-400 px-3 py-2 text-center text-sm font-semibold text-orange-600 dark:text-orange-400">Funnel Projects →</Link>
+        <Link href="/" className="block w-full rounded-lg border border-orange-400 px-3 py-2 text-center text-sm font-semibold text-orange-600 dark:text-orange-400">Funnel Sets →</Link>
         <button
           onClick={onNew}
           className="w-full rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-500"
         >
-          + New campaign kit
+          + New ad
         </button>
         <button
           onClick={onOpenLibrary}
@@ -45,13 +46,13 @@ export function Sidebar({
       </div>
       <div className="px-3 pb-1 pt-2">
         <span className="text-[0.65rem] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-600">
-          Saved campaigns
+          Ads
         </span>
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-3">
         {runs.length === 0 && (
           <p className="px-2 py-4 text-xs text-neutral-400 dark:text-neutral-500">
-            No saved kits yet. Generate one to see it here.
+            No ads yet. Generate one to see it here.
           </p>
         )}
         {runs.map((run) => (
@@ -66,6 +67,7 @@ export function Sidebar({
             <button onClick={() => onSelect(run.id)} className="min-w-0 flex-1 text-left">
               <p className="truncate font-medium text-neutral-800 dark:text-neutral-200">{run.label}</p>
               <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+                {run.stage ? `${STAGE_LABELS[run.stage]} · ` : "Ad pool · "}
                 {new Date(run.createdAt).toLocaleString()}
               </p>
             </button>

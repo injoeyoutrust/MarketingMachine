@@ -62,7 +62,7 @@ export default function ScriptWorkshop() {
     finally { lock.current = false; setBusy(false); }
   }
   return <main className="min-h-screen bg-white p-6 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100"><div className="mx-auto max-w-6xl space-y-5">
-    <Link href="/" className="text-sm text-orange-600">← Campaign kits</Link><h1 className="text-2xl font-bold">Script Workshop</h1><p>Choose a framework, write each beat, then let AI edit and polish your words.</p>
+    <Link href="/ads" className="text-sm text-orange-600">← Ad pool</Link><h1 className="text-2xl font-bold">Script Workshop</h1><p>Choose a framework, write each beat, then let AI edit and polish your words.</p>
     <fieldset disabled={busy || !loaded}>
       <ScriptFrameworkSelector value={draft.options} onChange={options => { if (options.framework !== framework) setFramework(options.framework); else update({ options }); }} />
       <p className="text-xs text-neutral-500">Each framework keeps a separate draft. {saved}. Drafts are not synced to Supabase.</p>
