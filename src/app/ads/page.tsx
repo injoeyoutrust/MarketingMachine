@@ -7,10 +7,12 @@ import { Sidebar } from "@/components/Sidebar";
 import { IntakeForm, type IntakeMode } from "@/components/IntakeForm";
 import { StyleSelector } from "@/components/StyleSelector";
 import { StyleLibrary } from "@/components/StyleLibrary";
+import { AdIdeas, type AdIdea } from "@/components/AdIdeas";
 import { ResultsTabs } from "@/components/ResultsTabs";
 import { OriginalEntryModal } from "@/components/OriginalEntryModal";
 import { EditLedgerModal } from "@/components/EditLedgerModal";
-import { loadRuns, saveRun, deleteRun, editRunField, assignRun } from "@/lib/storage";
+import { AnglePicker } from "@/components/StageAdCard";
+import { loadRuns, saveRun, deleteRun, editRunField, placeAd, removePlacement } from "@/lib/storage";
 import { loadStyles } from "@/lib/styleStorage";
 import {
   emptyIntakeFields,
@@ -27,7 +29,7 @@ import {
 } from "@/lib/intakeFields";
 import type { SavedRun, CampaignKit } from "@/lib/types";
 import { stripEmotionPoints, getEmotionDevelopmentRank, type Style } from "@/lib/styleLibrary";
-import { FUNNEL_STAGES, STAGE_LABELS, type FunnelProject, type FunnelStage } from "@/lib/funnels";
+import { FUNNEL_STAGES, STAGE_LABELS, type FunnelPlacement, type FunnelProject, type FunnelStage } from "@/lib/funnels";
 
 const DEFAULT_ANGLE_IDS = [
   "identity-mirror",
@@ -87,7 +89,7 @@ function describeAngleEmotions(run: SavedRun, styles: Style[]): string[] {
   return run.adAngleNames.map((name) => (byName[name] ? `${name} (${byName[name].label})` : name));
 }
 
-type Panel = "runs" | "library";
+type Panel = "runs" | "library" | "ideas";
 type Stage = "form" | "styles";
 
 export default function AdsPage() {
@@ -101,7 +103,7 @@ export default function AdsPage() {
   const [stage, setStage] = useState<Stage>("form");
   const [showOriginalEntry, setShowOriginalEntry] = useState(false);
   const [showEditLedger, setShowEditLedger] = useState(false);
-  const [assignTarget, setAssignTarget] = useState<{ funnelSetId: string; stage: FunnelStage } | null>(null);
+  const [assignTarget, setAssignTarget] = useState<{ funnelSetId: string; stage: FunnelStage; angleIndex: number | null } | null>(null);
   const [pendingAssign, setPendingAssign] = useState<{ funnelSetId: string; stage: FunnelStage } | null>(() => {
     if (typeof window === "undefined") return null;
     try {
@@ -112,6 +114,8 @@ export default function AdsPage() {
     } catch { return null; }
   });
   const [assigning, setAssigning] = useState(false);
+  // Funnel levels the open ad is placed in, tagged with the ad they were loaded for.
+  const [placementsFor, setPlacementsFor] = useState<{ runId: string; list: FunnelPlacement[] } | null>(null);
 
   const [label, setLabel] = useState("");
   const [mode, setMode] = useState<IntakeMode>("quick");
@@ -145,7 +149,17 @@ export default function AdsPage() {
   }, []);
 
   const activeRun = runs.find((r) => r.id === activeId) ?? null;
-  const activeFunnelSet = activeRun?.funnelSetId ? funnelSets.find((f) => f.id === activeRun.funnelSetId) ?? null : null;
+  const activePlacements = placementsFor && placementsFor.runId === activeId ? placementsFor.list : [];
+
+  useEffect(() => {
+    if (!activeId) return;
+    let cancelled = false;
+    fetch(`/api/runs/${activeId}/placements`)
+      .then((res) => (res.ok ? res.json() : { placements: [] }))
+      .then((data) => { if (!cancelled) setPlacementsFor({ runId: activeId, list: data.placements ?? [] }); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [activeId]);
 
   async function refreshStyles() {
     setStyles(await loadStyles());
@@ -174,6 +188,19 @@ export default function AdsPage() {
     setShowOriginalEntry(false);
     setShowEditLedger(false);
     setError(null);
+  }
+
+  function handleOpenIdeas() {
+    setPanel("ideas");
+    setActiveId(null);
+  }
+
+  /** Starts a new Quick Idea ad pre-filled from a saved idea. */
+  function handleBuildFromIdea(idea: AdIdea) {
+    handleNew();
+    setMode("quick");
+    setQuickIdea(idea.note ? `${idea.text}\n\n${idea.note}` : idea.text);
+    setLabel(idea.text.length > 60 ? `${idea.text.slice(0, 57).trimEnd()}…` : idea.text);
   }
 
   function handleOpenLibrary() {
@@ -236,17 +263,28 @@ export default function AdsPage() {
     setRuns((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
   }
 
-  async function handleAssign(funnelSetId: string | null, stageValue: FunnelStage | null) {
-    if (!activeId) return;
+  async function handleAddToFunnel() {
+    if (!activeId || !assignTarget?.funnelSetId) return;
     setAssigning(true);
     try {
-      const updated = await assignRun(activeId, funnelSetId, stageValue);
-      if (!updated) {
-        setError("Couldn't save that assignment — check the Supabase connection and try again.");
-        return;
-      }
-      setRuns((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-      setAssignTarget(null);
+      const placed = await placeAd(assignTarget.funnelSetId, activeId, assignTarget.stage, assignTarget.angleIndex);
+      setPlacementsFor((prev) => ({ runId: activeId, list: [...(prev?.runId === activeId ? prev.list : []), placed] }));
+      // Stay open so another angle can go in straight away.
+      setAssignTarget({ ...assignTarget, angleIndex: activeRun && activeRun.kit.adSets.length === 1 ? 0 : null });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't add that ad to the funnel.");
+    } finally {
+      setAssigning(false);
+    }
+  }
+
+  async function handleRemovePlacement(p: FunnelPlacement) {
+    setAssigning(true);
+    try {
+      await removePlacement(p);
+      setPlacementsFor((prev) => (prev ? { ...prev, list: prev.list.filter((x) => x.id !== p.id) } : prev));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't remove that.");
     } finally {
       setAssigning(false);
     }
@@ -314,14 +352,15 @@ export default function AdsPage() {
         setError("Ad was generated but couldn't be saved. Check the Supabase connection.");
         return;
       }
-      let finalRun = saved;
       if (pendingAssign) {
-        const assigned = await assignRun(saved.id, pendingAssign.funnelSetId, pendingAssign.stage);
-        if (assigned) finalRun = assigned;
+        // Angle is left unset — the funnel level card asks for it.
+        await placeAd(pendingAssign.funnelSetId, saved.id, pendingAssign.stage, saved.kit.adSets.length === 1 ? 0 : null).catch(() =>
+          setError("Ad was saved, but couldn't be added to the funnel. Add it from the Funnels page.")
+        );
         setPendingAssign(null);
       }
       setRuns(await loadRuns());
-      setActiveId(finalRun.id);
+      setActiveId(saved.id);
       setStage("form");
     } catch {
       setError("Network error reaching the server. Is the dev server running?");
@@ -414,14 +453,14 @@ export default function AdsPage() {
 
   if (initializing) {
     return (
-      <div className="flex h-screen items-center justify-center bg-white dark:bg-neutral-950">
+      <div className="flex h-[calc(100dvh-var(--topnav-h))] items-center justify-center bg-white dark:bg-neutral-950">
         <p className="text-sm text-neutral-400">Loading…</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-white dark:bg-neutral-950">
+    <div className="flex h-[calc(100dvh-var(--topnav-h))] bg-white dark:bg-neutral-950">
       <Sidebar
         runs={runs}
         activeId={activeId}
@@ -430,6 +469,7 @@ export default function AdsPage() {
         onNew={handleNew}
         onDelete={handleDelete}
         onOpenLibrary={handleOpenLibrary}
+        onOpenIdeas={handleOpenIdeas}
       />
       <main className="flex-1 overflow-y-auto">
         <header className="border-b border-neutral-200 px-6 py-4 dark:border-neutral-800">
@@ -446,7 +486,9 @@ export default function AdsPage() {
             </p>
           )}
           {panel === "runs" && !activeRun && <ScriptFrameworkSelector value={scriptOptions} onChange={setScriptOptions} disabled={loading} />}
-          {panel === "library" ? (
+          {panel === "ideas" ? (
+            <AdIdeas onBuild={handleBuildFromIdea} />
+          ) : panel === "library" ? (
             <StyleLibrary styles={styles} onChanged={refreshStyles} />
           ) : activeRun ? (
             <div>
@@ -460,21 +502,35 @@ export default function AdsPage() {
                     {activeRun.vslStyleName}
                   </p>
                   <p className="mt-1 text-xs">
-                    {activeFunnelSet && activeRun.stage ? (
-                      <span className="rounded-full bg-orange-100 px-2 py-0.5 font-medium text-orange-700 dark:bg-orange-950 dark:text-orange-300">
-                        {STAGE_LABELS[activeRun.stage]} · {activeFunnelSet.label}
-                      </span>
+                    {activePlacements.length === 0 ? (
+                      <span className="text-neutral-400 dark:text-neutral-500">Not in any funnel yet</span>
                     ) : (
-                      <span className="text-neutral-400 dark:text-neutral-500">Unassigned — sitting in the ad pool</span>
+                      <span className="flex flex-wrap gap-1.5">
+                        {activePlacements.map((p) => (
+                          <span key={p.id} className="flex items-center gap-1 rounded-full bg-orange-100 py-0.5 pl-2 pr-1 font-medium text-orange-700 dark:bg-orange-950 dark:text-orange-300">
+                            {STAGE_LABELS[p.stage]} · {funnelSets.find((f) => f.id === p.funnel_set_id)?.label ?? "Funnel"}
+                            {p.angle_index !== null && activeRun.kit.adSets[p.angle_index] ? ` · ${activeRun.kit.adSets[p.angle_index].angle}` : ""}
+                            <button
+                              disabled={assigning}
+                              onClick={() => handleRemovePlacement(p)}
+                              aria-label="Remove from this funnel level"
+                              title="Remove from this funnel level"
+                              className="rounded-full px-1 hover:bg-orange-200 disabled:opacity-50 dark:hover:bg-orange-900"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                      </span>
                     )}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button
-                    onClick={() => setAssignTarget((t) => (t ? null : { funnelSetId: activeRun.funnelSetId ?? "", stage: activeRun.stage ?? "TOFO" }))}
+                    onClick={() => setAssignTarget((t) => (t ? null : { funnelSetId: activePlacements.at(-1)?.funnel_set_id ?? "", stage: activePlacements.at(-1)?.stage ?? "TOFO", angleIndex: activeRun.kit.adSets.length === 1 ? 0 : null }))}
                     className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
                   >
-                    {activeRun.funnelSetId ? "Change assignment" : "Assign to a campaign"}
+                    {assignTarget ? "Close" : "Add to a funnel"}
                   </button>
                   <button
                     onClick={() => setShowOriginalEntry(true)}
@@ -503,21 +559,22 @@ export default function AdsPage() {
               </div>
               {assignTarget && (
                 <div className="mx-auto mb-4 max-w-5xl rounded-lg border border-orange-300 bg-orange-500/10 p-4">
-                  <p className="mb-3 text-sm font-semibold">Assign this ad</p>
+                  <p className="mb-1 text-sm font-semibold">Add this ad to a funnel</p>
+                  <p className="mb-3 text-xs text-neutral-500">Add as many angles as you like — to one level or spread across TOFU, MOFU and BOFU.</p>
                   <div className="flex flex-wrap items-end gap-3">
                     <label className="text-sm">
-                      Funnel set
+                      Funnel
                       <select
                         className="mt-1 block rounded-lg border border-neutral-300 bg-white p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
                         value={assignTarget.funnelSetId}
                         onChange={(e) => setAssignTarget({ ...assignTarget, funnelSetId: e.target.value })}
                       >
-                        <option value="">Select a funnel set…</option>
+                        <option value="">Select a funnel…</option>
                         {funnelSets.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
                       </select>
                     </label>
                     <label className="text-sm">
-                      Campaign
+                      Level
                       <select
                         className="mt-1 block rounded-lg border border-neutral-300 bg-white p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
                         value={assignTarget.stage}
@@ -526,22 +583,27 @@ export default function AdsPage() {
                         {FUNNEL_STAGES.map((s) => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
                       </select>
                     </label>
+                    {activeRun.kit.adSets.length > 1 && (
+                      <label className="text-sm">
+                        Angle
+                        <AnglePicker
+                          ad={activeRun}
+                          value={assignTarget.angleIndex}
+                          onChange={(i) => setAssignTarget({ ...assignTarget, angleIndex: i })}
+                          taken={activePlacements
+                            .filter((p) => p.funnel_set_id === assignTarget.funnelSetId && p.stage === assignTarget.stage && p.angle_index !== null)
+                            .map((p) => p.angle_index as number)}
+                          className="mt-1 block"
+                        />
+                      </label>
+                    )}
                     <button
-                      disabled={assigning || !assignTarget.funnelSetId}
-                      onClick={() => handleAssign(assignTarget.funnelSetId, assignTarget.stage)}
+                      disabled={assigning || !assignTarget.funnelSetId || assignTarget.angleIndex === null}
+                      onClick={handleAddToFunnel}
                       className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-500 disabled:opacity-50"
                     >
-                      {assigning ? "Saving…" : "Assign"}
+                      {assigning ? "Adding…" : "Add"}
                     </button>
-                    {activeRun.funnelSetId && (
-                      <button
-                        disabled={assigning}
-                        onClick={() => handleAssign(null, null)}
-                        className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
-                      >
-                        Send back to ad pool
-                      </button>
-                    )}
                   </div>
                 </div>
               )}

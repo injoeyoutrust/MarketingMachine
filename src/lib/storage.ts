@@ -1,5 +1,5 @@
+import type { FunnelPlacement, FunnelStage } from "./funnels";
 import type { SavedRun } from "./types";
-import type { FunnelStage } from "./funnels";
 
 export async function loadRuns(): Promise<SavedRun[]> {
   const res = await fetch("/api/runs");
@@ -9,7 +9,7 @@ export async function loadRuns(): Promise<SavedRun[]> {
 }
 
 export async function saveRun(
-  run: Omit<SavedRun, "id" | "createdAt" | "originalKit" | "editLedger" | "funnelSetId" | "stage">
+  run: Omit<SavedRun, "id" | "createdAt" | "originalKit" | "editLedger">
 ): Promise<SavedRun | null> {
   const res = await fetch("/api/runs", {
     method: "POST",
@@ -42,18 +42,35 @@ export async function editRunField(
   return data.run as SavedRun;
 }
 
-/** Moves an ad into a funnel set's TOFU/MOFU/BOFU campaign, or pass nulls to send it back to the ad pool. */
-export async function assignRun(
+/** Places one angle of an ad into a funnel level. The same ad can be placed many times. */
+export async function placeAd(
+  funnelSetId: string,
   runId: string,
-  funnelSetId: string | null,
-  stage: FunnelStage | null
-): Promise<SavedRun | null> {
-  const res = await fetch(`/api/runs/${runId}/assign`, {
+  stage: FunnelStage,
+  angleIndex: number | null
+): Promise<FunnelPlacement> {
+  const res = await fetch(`/api/funnels/${funnelSetId}/placements`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ runId, stage, angleIndex }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error ?? "Could not add that ad to the funnel.");
+  return data.placement as FunnelPlacement;
+}
+
+export async function setPlacementAngle(p: FunnelPlacement, angleIndex: number): Promise<FunnelPlacement> {
+  const res = await fetch(`/api/funnels/${p.funnel_set_id}/placements/${p.id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ funnelSetId, stage }),
+    body: JSON.stringify({ angleIndex }),
   });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.run as SavedRun;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error ?? "Could not save that angle.");
+  return data.placement as FunnelPlacement;
+}
+
+export async function removePlacement(p: FunnelPlacement): Promise<void> {
+  const res = await fetch(`/api/funnels/${p.funnel_set_id}/placements/${p.id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Could not remove that ad from the level.");
 }

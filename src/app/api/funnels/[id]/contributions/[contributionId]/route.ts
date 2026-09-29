@@ -15,7 +15,8 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
   const path: string | undefined = body.path;
   const newValue = body.newValue;
-  if (!path || newValue === undefined) {
+  const keepAngleIndex = body.keepAngleIndex;
+  if (keepAngleIndex === undefined && (!path || newValue === undefined)) {
     return NextResponse.json({ error: 'path and newValue are required.' }, { status: 400 });
   }
 
@@ -30,9 +31,17 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   }
 
   let updatedCopy: FunnelCopy;
-  try {
-    updatedCopy = setAtPath(existing.copy as FunnelCopy, path, newValue);
-    getAtPath(existing.copy, path);
+  if (keepAngleIndex !== undefined) {
+    // Trims a multi-angle item (e.g. an older full-ad import) down to the one
+    // angle this level should use. SMS and email are left as they are.
+    const adSets = (existing.copy as FunnelCopy).adSets;
+    if (!Number.isInteger(keepAngleIndex) || keepAngleIndex < 0 || keepAngleIndex >= adSets.length) {
+      return NextResponse.json({ error: "That angle doesn't exist on this item." }, { status: 400 });
+    }
+    updatedCopy = { ...(existing.copy as FunnelCopy), adSets: [adSets[keepAngleIndex]] };
+  } else try {
+    updatedCopy = setAtPath(existing.copy as FunnelCopy, path!, newValue);
+    getAtPath(existing.copy, path!);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Invalid field path.';
     return NextResponse.json({ error: message }, { status: 400 });
@@ -47,4 +56,11 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ contribution: data });
+}
+
+export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string; contributionId: string }> }) {
+  const { id, contributionId } = await context.params;
+  const { error } = await supabaseServer().from('funnel_contributions').delete().eq('id', contributionId).eq('project_id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
 }

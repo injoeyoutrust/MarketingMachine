@@ -3,7 +3,6 @@
 import Link from "next/link";
 import type { SavedRun } from "@/lib/types";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { STAGE_LABELS } from "@/lib/funnels";
 
 export function Sidebar({
   runs,
@@ -13,20 +12,21 @@ export function Sidebar({
   onNew,
   onDelete,
   onOpenLibrary,
+  onOpenIdeas,
 }: {
   runs: SavedRun[];
   activeId: string | null;
-  panel: "runs" | "library";
+  panel: "runs" | "library" | "ideas";
   onSelect: (id: string) => void;
   onNew: () => void;
   onDelete: (id: string) => void;
   onOpenLibrary: () => void;
+  onOpenIdeas: () => void;
 }) {
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
       <div className="space-y-1.5 p-3">
         <Link href="/scripts" className="block w-full rounded-lg border border-orange-400 px-3 py-2 text-center text-sm font-semibold text-orange-600">Script Workshop →</Link>
-        <Link href="/" className="block w-full rounded-lg border border-orange-400 px-3 py-2 text-center text-sm font-semibold text-orange-600 dark:text-orange-400">Funnel Sets →</Link>
         <button
           onClick={onNew}
           className="w-full rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-500"
@@ -42,6 +42,16 @@ export function Sidebar({
           }`}
         >
           🎨 Style library
+        </button>
+        <button
+          onClick={onOpenIdeas}
+          className={`w-full rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+            panel === "ideas"
+              ? "border-orange-400 bg-orange-50 text-orange-700 dark:border-orange-700 dark:bg-orange-950/50 dark:text-orange-300"
+              : "border-neutral-300 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+          }`}
+        >
+          💡 Ad ideas
         </button>
       </div>
       <div className="px-3 pb-1 pt-2">
@@ -67,7 +77,6 @@ export function Sidebar({
             <button onClick={() => onSelect(run.id)} className="min-w-0 flex-1 text-left">
               <p className="truncate font-medium text-neutral-800 dark:text-neutral-200">{run.label}</p>
               <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-                {run.stage ? `${STAGE_LABELS[run.stage]} · ` : "Ad pool · "}
                 {new Date(run.createdAt).toLocaleString()}
               </p>
             </button>

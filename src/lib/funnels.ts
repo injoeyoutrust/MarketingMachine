@@ -32,6 +32,16 @@ export interface FunnelContribution {
   copy: FunnelCopy;
   created_at: string;
 }
+/** One (ad, angle) placed into a funnel level. The same ad can have many. */
+export interface FunnelPlacement {
+  id: string;
+  funnel_set_id: string;
+  stage: FunnelStage;
+  run_id: string;
+  /** Index into the ad's kit.adSets. Null = angle not chosen yet. */
+  angle_index: number | null;
+  created_at: string;
+}
 export function emptyStageBriefs(): FunnelProject['stages'] {
   return Object.fromEntries(FUNNEL_STAGES.map(stage => [stage, { idea: '', tone: '', adTypes: '' }])) as FunnelProject['stages'];
 }

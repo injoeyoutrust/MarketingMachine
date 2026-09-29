@@ -6,6 +6,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  /* Height of the pinned TopNav; full-height pages subtract it. */
+  --topnav-h: 4.5rem;
   --background: #ffffff;
   --foreground: #171717;
 }

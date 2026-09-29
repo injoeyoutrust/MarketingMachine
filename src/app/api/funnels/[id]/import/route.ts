@@ -19,6 +19,14 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
       if (!run) return NextResponse.json({ error: 'Saved campaign not found.' }, { status: 404 });
       copy = run.kit;
       label = `Imported campaign: ${run.label}`;
+      // Only the one chosen angle joins the level; SMS and email come along whole.
+      if (body.angleIndex !== undefined && body.angleIndex !== null) {
+        const adSets = isRecord(copy) && Array.isArray(copy.adSets) ? copy.adSets : [];
+        const i = body.angleIndex;
+        if (typeof i !== 'number' || !Number.isInteger(i) || i < 0 || i >= adSets.length) return NextResponse.json({ error: 'That angle does not exist on this ad.' }, { status: 400 });
+        copy = { ...(copy as Record<string, unknown>), adSets: [adSets[i]] };
+        label = `Imported campaign: ${run.label} — ${(adSets[i] as { angle?: string })?.angle ?? `angle ${i + 1}`}`;
+      }
     }
     if (!label || !validImportedCopy(copy)) return NextResponse.json({ error: 'Provide a label and valid ad copy. SMS and email arrays can be empty.' }, { status: 400 });
     const { data, error } = await db.from('funnel_contributions').insert({ id: body.requestId, project_id: id, stage: body.stage, mode: 'import', idea: label, copy: { adSets: copy.adSets, sms: copy.sms, email: copy.email, flags: copy.flags } }).select('*').single();
