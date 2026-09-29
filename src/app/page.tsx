@@ -8,7 +8,7 @@ import { INTAKE_SECTIONS, emptyIntakeFields, composeIntakeText } from '@/lib/int
 import { FUNNEL_STAGES, STAGE_DESCRIPTIONS, STAGE_LABELS, emptyStageBriefs, type FunnelProject, type FunnelContribution, type FunnelPlacement, type FunnelStage } from '@/lib/funnels';
 import type { SavedRun } from '@/lib/types';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { placeAd, setPlacementAngle, removePlacement } from '@/lib/storage';
+import { placeAd, setPlacementAngle, removePlacement, editRunField } from '@/lib/storage';
 import { FunnelPyramid } from '@/components/FunnelPyramid';
 import { StageAdCard, AnglePicker, LevelCard } from '@/components/StageAdCard';
 import { LandingPrompts } from '@/components/ProductionPrompts';
@@ -122,6 +122,11 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error || 'Could not save that edit.');
       setContributions(prev => prev.map(c => (c.id === contributionId ? { ...c, copy: data.contribution.copy } : c)));
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not save that edit.'); }
+  }
+  async function saveAdField(runId: string, path: string, newValue: string) {
+    const updated = await editRunField(runId, path, path, newValue);
+    if (!updated) { setError('Could not save that edit. Check the database connection and try again.'); return; }
+    setAllAds(prev => prev.map(a => (a.id === runId ? updated : a)));
   }
   async function keepOneAngle(entry: FunnelContribution, angleIndex: number) {
     if (!project) return;
@@ -343,7 +348,7 @@ export default function Home() {
 
           <div className="space-y-2">
             {levelCounts[stage] === 0 && <p className="rounded-xl border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-500 dark:border-neutral-700">Nothing in {STAGE_LABELS[stage]} yet. Use <strong>+ Add to {STAGE_LABELS[stage]}</strong> to put an ad here.</p>}
-            {placedInStage.map(({ placement, ad }) => <StageAdCard key={placement.id} ad={ad} placement={placement} removing={assigning} onRemove={() => unplaceAd(placement)} onChangeAngle={i => changeAdAngle(placement, i)} />)}
+            {placedInStage.map(({ placement, ad }) => <StageAdCard key={placement.id} ad={ad} placement={placement} removing={assigning} onRemove={() => unplaceAd(placement)} onChangeAngle={i => changeAdAngle(placement, i)} onSaveAdField={(path, v) => saveAdField(ad.id, path, v)} />)}
             {stageCopy.map(entry => {
               const dup = duplicateOf(entry);
               return <LevelCard

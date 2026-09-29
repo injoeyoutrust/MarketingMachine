@@ -151,6 +151,8 @@ export function LevelCard({
   const [section, setSection] = useState<Section>("copy");
   // Picture count isn't known until the images load, so that tab shows none.
   const counts: Record<Section, number | null> = { copy: adSets.length, picture: null, video: adSets.length, email: email.length, sms: sms.length };
+  // Displayed angle -> its index in the source copy (a placed ad shows just one chosen angle).
+  const srcIndex = (i: number) => angleIndices?.[i] ?? i;
   const save = onSaveAdField ? (path: string, _label: string, v: string) => onSaveAdField(path, v) : undefined;
 
   return (
@@ -213,9 +215,9 @@ export function LevelCard({
                   <span className={`inline-block rounded-full px-2 py-0.5 text-[0.7rem] font-medium ${angleColor(set.angle).badge}`}>{set.angle}</span>
                   <CopyAllButton label="Copy all ad copy" text={adCopyText(set)} />
                 </div>
-                <CopyField label="Headline" value={set.headline} path={save && `adSets.${i}.headline`} onSave={save} />
-                <CopyField label="Primary text" value={set.primaryText} path={save && `adSets.${i}.primaryText`} onSave={save} />
-                <CopyField label="Description" value={set.description} path={save && `adSets.${i}.description`} onSave={save} />
+                <CopyField label="Headline" value={set.headline} path={save && `adSets.${srcIndex(i)}.headline`} onSave={save} />
+                <CopyField label="Primary text" value={set.primaryText} path={save && `adSets.${srcIndex(i)}.primaryText`} onSave={save} />
+                <CopyField label="Description" value={set.description} path={save && `adSets.${srcIndex(i)}.description`} onSave={save} />
               </div>
             ))}
 
@@ -227,7 +229,7 @@ export function LevelCard({
                   <CopyAllButton label="Copy full script" text={scriptText(set)} />
                 </div>
                 {scriptBeats(set.videoScript, set.scriptFramework).map((beat) => (
-                  <CopyField key={beat.key} label={beat.label} value={beat.value} accent={angleColor(set.angle).dot} path={save && `adSets.${i}.videoScript.${beat.key}`} onSave={save} />
+                  <CopyField key={beat.key} label={beat.label} value={beat.value} accent={angleColor(set.angle).dot} path={save && `adSets.${srcIndex(i)}.videoScript.${beat.key}`} onSave={save} />
                 ))}
               </div>
             ))}
@@ -238,8 +240,8 @@ export function LevelCard({
             ) : (
               email.map((e, i) => (
                 <div key={i} className="mb-4 last:mb-0">
-                  <CopyField label={`Email ${i + 1} · day ${e.day} · subject`} value={e.subject} />
-                  <CopyField label="Body" value={e.body} />
+                  <CopyField label={`Email ${i + 1} · day ${e.day} · subject`} value={e.subject} path={save && `email.${i}.subject`} onSave={save} />
+                  <CopyField label="Body" value={e.body} path={save && `email.${i}.body`} onSave={save} />
                 </div>
               ))
             ))}
@@ -248,7 +250,7 @@ export function LevelCard({
             (sms.length === 0 ? (
               <p className="text-sm text-neutral-500">No SMS.</p>
             ) : (
-              sms.map((m, i) => <CopyField key={i} label={`SMS ${i + 1} · day ${m.day}`} value={m.message} />)
+              sms.map((m, i) => <CopyField key={i} label={`SMS ${i + 1} · day ${m.day}`} value={m.message} path={save && `sms.${i}.message`} onSave={save} />)
             ))}
 
           {flags.length > 0 && (
@@ -272,12 +274,15 @@ export function StageAdCard({
   placement,
   onRemove,
   onChangeAngle,
+  onSaveAdField,
   removing,
 }: {
   ad: SavedRun;
   placement: FunnelPlacement;
   onRemove: () => void;
   onChangeAngle: (index: number) => void;
+  /** Saves an edit to the underlying ad (path is relative to its kit). */
+  onSaveAdField?: (path: string, value: string) => Promise<void>;
   removing?: boolean;
 }) {
   const i = placement.angle_index ?? (ad.kit.adSets.length === 1 ? 0 : null);
@@ -289,6 +294,7 @@ export function StageAdCard({
       title={ad.label}
       kind="Ad"
       pictureOwner={{ placementId: placement.id }}
+      onSaveAdField={onSaveAdField}
       adSets={chosen !== null ? [ad.kit.adSets[chosen]] : ad.kit.adSets}
       angleIndices={chosen !== null ? [chosen] : ad.kit.adSets.map((_, n) => n)}
       email={ad.kit.email}
