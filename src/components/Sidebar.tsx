@@ -8,11 +8,13 @@ export function Sidebar({
   runs,
   activeId,
   panel,
-  onSelect,
-  onNew,
+  onSelect: selectRun,
+  onNew: newAd,
   onDelete,
-  onOpenLibrary,
-  onOpenIdeas,
+  onOpenLibrary: openLibrary,
+  onOpenIdeas: openIdeas,
+  mobileOpen,
+  onCloseMobile,
 }: {
   runs: SavedRun[];
   activeId: string | null;
@@ -22,9 +24,28 @@ export function Sidebar({
   onDelete: (id: string) => void;
   onOpenLibrary: () => void;
   onOpenIdeas: () => void;
+  /** Phones: the sidebar is a slide-out drawer, shown only while this is true. */
+  mobileOpen: boolean;
+  onCloseMobile: () => void;
 }) {
+  // On phones, picking anything in the drawer should also close it.
+  const andClose = <A extends unknown[]>(fn: (...args: A) => void) => (...args: A) => { fn(...args); onCloseMobile(); };
+  const onSelect = andClose(selectRun);
+  const onNew = andClose(newAd);
+  const onOpenLibrary = andClose(openLibrary);
+  const onOpenIdeas = andClose(openIdeas);
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
+    <>
+    {mobileOpen && <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={onCloseMobile} aria-hidden />}
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] shrink-0 flex-col border-r border-neutral-200 bg-neutral-50 transition-transform md:static md:z-auto md:w-64 md:max-w-none md:translate-x-0 dark:border-neutral-800 dark:bg-neutral-950 ${
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
+      <div className="flex items-center justify-between px-3 pt-3 md:hidden">
+        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Ads &amp; libraries</span>
+        <button onClick={onCloseMobile} aria-label="Close menu" className="rounded p-2 text-lg leading-none text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-800">✕</button>
+      </div>
       <div className="space-y-1.5 p-3">
         <Link href="/scripts" className="block w-full rounded-lg border border-orange-400 px-3 py-2 text-center text-sm font-semibold text-orange-600">Script Workshop →</Link>
         <button
@@ -97,5 +118,6 @@ export function Sidebar({
         <ThemeToggle />
       </div>
     </aside>
+    </>
   );
 }

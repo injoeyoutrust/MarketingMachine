@@ -114,6 +114,7 @@ export default function AdsPage() {
     } catch { return null; }
   });
   const [assigning, setAssigning] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   // Funnel levels the open ad is placed in, tagged with the ad they were loaded for.
   const [placementsFor, setPlacementsFor] = useState<{ runId: string; list: FunnelPlacement[] } | null>(null);
 
@@ -470,15 +471,26 @@ export default function AdsPage() {
         onDelete={handleDelete}
         onOpenLibrary={handleOpenLibrary}
         onOpenIdeas={handleOpenIdeas}
+        mobileOpen={sidebarOpen}
+        onCloseMobile={() => setSidebarOpen(false)}
       />
-      <main className="flex-1 overflow-y-auto">
-        <header className="border-b border-neutral-200 px-6 py-4 dark:border-neutral-800">
-          <h1 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">Ad Pool</h1>
+      <main className="min-w-0 flex-1 overflow-y-auto">
+        <header className="border-b border-neutral-200 px-4 py-4 md:px-6 dark:border-neutral-800">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open ads and libraries"
+              className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 md:hidden dark:border-neutral-700 dark:text-neutral-300"
+            >
+              ☰ Ads
+            </button>
+            <h1 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">Ad Pool</h1>
+          </div>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
             Build an ad here, on its own. Assign it into a funnel set&apos;s TOFU/MOFU/BOFU campaign whenever you&apos;re ready — or leave it in the pool.
           </p>
         </header>
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {pendingAssign && !activeRun && (
             <p className="mx-auto mb-4 max-w-5xl rounded-lg border border-orange-300 bg-orange-500/10 p-3 text-sm">
               The next ad you generate will be added to {STAGE_LABELS[pendingAssign.stage]} in{" "}
@@ -492,7 +504,7 @@ export default function AdsPage() {
             <StyleLibrary styles={styles} onChanged={refreshStyles} />
           ) : activeRun ? (
             <div>
-              <div className="mx-auto mb-4 flex max-w-5xl items-center justify-between">
+              <div className="mx-auto mb-4 flex max-w-5xl flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
                     {activeRun.label}
@@ -525,7 +537,7 @@ export default function AdsPage() {
                     )}
                   </p>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setAssignTarget((t) => (t ? null : { funnelSetId: activePlacements.at(-1)?.funnel_set_id ?? "", stage: activePlacements.at(-1)?.stage ?? "TOFO", angleIndex: activeRun.kit.adSets.length === 1 ? 0 : null }))}
                     className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"

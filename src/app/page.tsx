@@ -11,12 +11,19 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { placeAd, setPlacementAngle, removePlacement } from '@/lib/storage';
 import { FunnelPyramid } from '@/components/FunnelPyramid';
 import { StageAdCard, AnglePicker, LevelCard } from '@/components/StageAdCard';
+import { LandingPrompts } from '@/components/ProductionPrompts';
 
 const inputClass = 'mt-1 w-full rounded-lg border border-neutral-300 bg-white p-3 text-sm dark:border-neutral-700 dark:bg-neutral-900';
 const buttonClass = 'rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-500 disabled:opacity-50';
 async function api(path: string, body?: unknown) {
-  const res = await fetch(`/api/funnels${path}`, body === undefined ? undefined : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  const data = await res.json();
+  let res: Response;
+  try {
+    res = await fetch(`/api/funnels${path}`, body === undefined ? undefined : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  } catch {
+    // fetch only throws when the server can't be reached at all.
+    throw new Error("Can't reach the app server. Is `npm run dev` running? Start it, then click Reload list.");
+  }
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Request failed. Please retry.');
   return data;
 }
@@ -331,6 +338,8 @@ export default function Home() {
             </div>}
             {importNotice && <p role="status" className="text-sm text-green-700 dark:text-green-400">{importNotice}</p>}
           </fieldset>}
+
+          <LandingPrompts funnelSetId={project.id} stage={stage} adCount={levelCounts[stage]} />
 
           <div className="space-y-2">
             {levelCounts[stage] === 0 && <p className="rounded-xl border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-500 dark:border-neutral-700">Nothing in {STAGE_LABELS[stage]} yet. Use <strong>+ Add to {STAGE_LABELS[stage]}</strong> to put an ad here.</p>}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { CopyField } from "@/components/CopyField";
 import { PictureAds, type PictureOwner } from "@/components/PictureAds";
+import { ImagePrompts } from "@/components/ProductionPrompts";
 import { angleColor } from "@/lib/angleColors";
 import { scriptBeats } from "@/lib/scriptFrameworks";
 import type { AdSet, EmailMessage, Flag, SavedRun, SmsMessage } from "@/lib/types";
@@ -119,6 +120,7 @@ export function LevelCard({
   actions,
   onSaveAdField,
   pictureOwner,
+  angleIndices,
   onDelete,
   deleteLabel = "Delete",
   deleteDisabled,
@@ -138,6 +140,8 @@ export function LevelCard({
   onSaveAdField?: (path: string, value: string) => Promise<void>;
   /** Which item uploaded picture-ad images belong to. */
   pictureOwner: PictureOwner;
+  /** Each shown angle's index in its source copy (defaults to 0, 1, 2…), for image prompts. */
+  angleIndices?: number[];
   /** Shows an always-visible delete/remove control in the card header. */
   onDelete?: () => void | Promise<void>;
   deleteLabel?: string;
@@ -193,7 +197,14 @@ export function LevelCard({
             <div className="flex gap-3 text-sm">{actions}</div>
           </div>
 
-          {section === "picture" && <PictureAds owner={pictureOwner} />}
+          {section === "picture" && (
+            <div className="space-y-4">
+              {!("runId" in pictureOwner) && (
+                <ImagePrompts owner={pictureOwner} angles={adSets.map((set, i) => ({ index: angleIndices?.[i] ?? i, name: set.angle || `Angle ${i + 1}` }))} />
+              )}
+              <PictureAds owner={pictureOwner} />
+            </div>
+          )}
 
           {section === "copy" &&
             adSets.map((set, i) => (
@@ -279,6 +290,7 @@ export function StageAdCard({
       kind="Ad"
       pictureOwner={{ placementId: placement.id }}
       adSets={chosen !== null ? [ad.kit.adSets[chosen]] : ad.kit.adSets}
+      angleIndices={chosen !== null ? [chosen] : ad.kit.adSets.map((_, n) => n)}
       email={ad.kit.email}
       sms={ad.kit.sms}
       notice={
