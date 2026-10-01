@@ -54,20 +54,21 @@ export async function resolveAdAngle(db: Db, o: NonNullable<ReturnType<typeof ad
   let adSet: AdSet | undefined;
   let projectId: string;
   let stage: FunnelStage;
+  let title: string;
   if (o.column === 'placement_id') {
     const { data: p } = await db.from('funnel_placements').select('*').eq('id', o.id).single();
     if (!p) return { error: 'That ad is no longer in this level.', status: 404 } as const;
-    const { data: run } = await db.from('campaign_runs').select('kit').eq('id', p.run_id).single();
+    const { data: run } = await db.from('campaign_runs').select('kit, label').eq('id', p.run_id).single();
     adSet = (run?.kit as { adSets?: AdSet[] })?.adSets?.[angleIndex];
-    projectId = p.funnel_set_id; stage = p.stage;
+    projectId = p.funnel_set_id; stage = p.stage; title = run?.label ?? 'Ad';
   } else {
     const { data: c } = await db.from('funnel_contributions').select('*').eq('id', o.id).single();
     if (!c) return { error: 'That item no longer exists.', status: 404 } as const;
     adSet = (c.copy as FunnelCopy).adSets?.[angleIndex];
-    projectId = c.project_id; stage = c.stage;
+    projectId = c.project_id; stage = c.stage; title = c.mode === 'base' ? 'Foundation' : c.idea;
   }
   if (!adSet) return { error: "That angle doesn't exist on this ad.", status: 400 } as const;
   const { data: project } = await db.from('funnel_projects').select('*').eq('id', projectId).single();
   if (!project) return { error: 'Funnel not found.', status: 404 } as const;
-  return { adSet, project: project as FunnelProject, projectId, stage } as const;
+  return { adSet, project: project as FunnelProject, projectId, stage, label: `${title.slice(0, 80)} — ${adSet.angle || `Angle ${angleIndex + 1}`}` } as const;
 }

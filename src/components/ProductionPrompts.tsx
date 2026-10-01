@@ -411,19 +411,31 @@ interface LandingPrompt {
   offer: string;
   prompt: string;
   notes: string;
+  source_labels?: string[];
   created_at: string;
 }
 
-/** Writes and keeps landing-page prompts for one funnel level, matched to its ads. */
-export function LandingPrompts({ funnelSetId, stage, adCount }: { funnelSetId: string; stage: FunnelStage; adCount: number }) {
+/** One ad angle in a funnel level that a page can be written for. */
+export interface LevelAdItem {
+  key: string;
+  label: string;
+  source: { placementId: string; angleIndex: number } | { contributionId: string; angleIndex: number };
+}
+
+/** Writes and keeps landing-page prompts for one funnel level — for whichever of its ads you tick. */
+export function LandingPrompts({ funnelSetId, stage, items }: { funnelSetId: string; stage: FunnelStage; items: LevelAdItem[] }) {
   const [prompts, setPrompts] = useState<LandingPrompt[] | null>(null);
   const [open, setOpen] = useState(false);
   const [goal, setGoal] = useState<Goal>("email_phone");
   const [builder, setBuilder] = useState<Builder>("ai_builder");
   const [offer, setOffer] = useState("");
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [unticked, setUnticked] = useState<Set<string>>(new Set());
+  const [pageMode, setPageMode] = useState<"one" | "each">("one");
+  const chosen = items.filter((it) => !unticked.has(it.key));
   const levelKey = `${funnelSetId}:${stage}`;
   const [loadedFor, setLoadedFor] = useState("");
 
@@ -436,21 +448,34 @@ export function LandingPrompts({ funnelSetId, stage, adCount }: { funnelSetId: s
     return () => { cancelled = true; };
   }, [funnelSetId, stage]);
 
+  async function write(sources: LevelAdItem["source"][]) {
+    const res = await fetch("/api/landing-prompts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ funnelSetId, stage, goal, builder, offer, sources }),
+    });
+    const d = await readJson(res);
+    setPrompts((prev) => [d.prompt as LandingPrompt, ...(prev ?? [])]);
+  }
+
   async function generate() {
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/landing-prompts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ funnelSetId, stage, goal, builder, offer }),
-      });
-      const d = await readJson(res);
-      setPrompts((prev) => [d.prompt as LandingPrompt, ...(prev ?? [])]);
+      if (pageMode === "each" && chosen.length > 1) {
+        // One page per ad, written one after another; stop at the first failure.
+        for (let i = 0; i < chosen.length; i++) {
+          setProgress(`Writing page ${i + 1} of ${chosen.length}…`);
+          await write([chosen[i].source]);
+        }
+      } else {
+        await write(chosen.map((it) => it.source));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not write the prompt.");
     } finally {
       setBusy(false);
+      setProgress("");
     }
   }
 
@@ -488,6 +513,42 @@ export function LandingPrompts({ funnelSetId, stage, adCount }: { funnelSetId: s
               </select>
             </label>
           </div>
+          <fieldset className="space-y-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+            <legend className="px-1 text-xs font-semibold text-neutral-500">Which ads is this page for?</legend>
+            {items.length === 0 ? (
+              <p className="text-xs text-neutral-500">Add an ad to {STAGE_LABELS[stage]} first — the page is written to match the ads you pick.</p>
+            ) : (
+              <>
+                <div className="flex gap-3 text-xs">
+                  <button type="button" onClick={() => setUnticked(new Set())} className={editLink}>Select all</button>
+                  <button type="button" onClick={() => setUnticked(new Set(items.map((it) => it.key)))} className={editLink}>Select none</button>
+                </div>
+                {items.map((it) => (
+                  <label key={it.key} className="flex items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={!unticked.has(it.key)}
+                      onChange={(e) => setUnticked((prev) => { const n = new Set(prev); if (e.target.checked) n.delete(it.key); else n.add(it.key); return n; })}
+                    />
+                    <span>{it.label}</span>
+                  </label>
+                ))}
+                {chosen.length > 1 && (
+                  <div className="space-y-1 border-t border-neutral-200 pt-2 text-sm dark:border-neutral-800">
+                    <label className="flex items-start gap-2">
+                      <input type="radio" name={`pagemode-${levelKey}`} className="mt-1" checked={pageMode === "one"} onChange={() => setPageMode("one")} />
+                      <span>One page for all {chosen.length} selected ads</span>
+                    </label>
+                    <label className="flex items-start gap-2">
+                      <input type="radio" name={`pagemode-${levelKey}`} className="mt-1" checked={pageMode === "each"} onChange={() => setPageMode("each")} />
+                      <span>A separate page for each ad ({chosen.length} pages)</span>
+                    </label>
+                  </div>
+                )}
+              </>
+            )}
+          </fieldset>
           <label className="block text-xs">
             {goal === "download" ? "The downloadable — what it is and what's inside (required)" : "Offer details or anything the page must include (optional)"}
             <textarea
@@ -498,10 +559,9 @@ export function LandingPrompts({ funnelSetId, stage, adCount }: { funnelSetId: s
               className="mt-1 w-full rounded-lg border border-neutral-300 bg-white p-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
             />
           </label>
-          <button disabled={busy || adCount === 0 || (goal === "download" && !offer.trim())} onClick={generate} className={primaryButton}>
-            {busy ? "Writing prompt… (about a minute — keep this page open)" : "Write landing page prompt"}
+          <button disabled={busy || chosen.length === 0 || (goal === "download" && !offer.trim())} onClick={generate} className={primaryButton}>
+            {busy ? `${progress || "Writing prompt…"} (about a minute each — keep this page open)` : pageMode === "each" && chosen.length > 1 ? `Write ${chosen.length} landing page prompts` : "Write landing page prompt"}
           </button>
-          {adCount === 0 && <p className="text-xs text-neutral-500">Add an ad to {STAGE_LABELS[stage]} first — the page is written to match its ads.</p>}
           {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           {list === null ? (
             <p className="text-sm text-neutral-400">Loading…</p>
@@ -509,7 +569,7 @@ export function LandingPrompts({ funnelSetId, stage, adCount }: { funnelSetId: s
             list.map((p) => (
               <div key={p.id} className="space-y-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500">
-                  <span>{GOAL_LABELS[p.goal]} · {BUILDER_LABELS[p.builder]} · {new Date(p.created_at).toLocaleDateString()}</span>
+                  <span>{GOAL_LABELS[p.goal]} · {BUILDER_LABELS[p.builder]} · {new Date(p.created_at).toLocaleDateString()}<br /><strong className="font-semibold">For: </strong>{p.source_labels?.length ? p.source_labels.join(" + ") : "all ads in this level"}</span>
                   {editingId !== p.id && (
                     <span className="flex items-center gap-3">
                       <CopyButton text={p.prompt} />
