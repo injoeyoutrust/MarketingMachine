@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { CopyField } from "@/components/CopyField";
 import { PictureAds, type PictureOwner } from "@/components/PictureAds";
-import { ImagePrompts } from "@/components/ProductionPrompts";
+import { AdLandingPrompts, ImagePrompts, VideoPrompts } from "@/components/ProductionPrompts";
 import { angleColor } from "@/lib/angleColors";
 import { scriptBeats } from "@/lib/scriptFrameworks";
 import type { AdSet, EmailMessage, Flag, SavedRun, SmsMessage } from "@/lib/types";
 import type { FunnelPlacement } from "@/lib/funnels";
 
-type Section = "copy" | "picture" | "video" | "email" | "sms";
-const SECTION_LABELS: Record<Section, string> = { copy: "Ad copy", picture: "Picture ad", video: "Video script", email: "Email", sms: "SMS" };
+type Section = "copy" | "picture" | "video" | "videoPrompt" | "funnelPage" | "email" | "sms";
+const SECTION_LABELS: Record<Section, string> = { copy: "Ad copy", picture: "Picture ad", video: "Video script", videoPrompt: "Video prompt", funnelPage: "Funnel page", email: "Email", sms: "SMS" };
 
 /** One button that copies a whole block (all of an angle's ad copy, or its full script). */
 function CopyAllButton({ label, text }: { label: string; text: string }) {
@@ -150,7 +150,7 @@ export function LevelCard({
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<Section>("copy");
   // Picture count isn't known until the images load, so that tab shows none.
-  const counts: Record<Section, number | null> = { copy: adSets.length, picture: null, video: adSets.length, email: email.length, sms: sms.length };
+  const counts: Record<Section, number | null> = { copy: adSets.length, picture: null, video: adSets.length, videoPrompt: null, funnelPage: null, email: email.length, sms: sms.length };
   // Displayed angle -> its index in the source copy (a placed ad shows just one chosen angle).
   const srcIndex = (i: number) => angleIndices?.[i] ?? i;
   const save = onSaveAdField ? (path: string, _label: string, v: string) => onSaveAdField(path, v) : undefined;
@@ -207,6 +207,11 @@ export function LevelCard({
               <PictureAds owner={pictureOwner} />
             </div>
           )}
+
+          {(section === "videoPrompt" || section === "funnelPage") && !("runId" in pictureOwner) && (() => {
+            const angles = adSets.map((set, i) => ({ index: srcIndex(i), name: set.angle || `Angle ${i + 1}` }));
+            return section === "videoPrompt" ? <VideoPrompts owner={pictureOwner} angles={angles} /> : <AdLandingPrompts owner={pictureOwner} angles={angles} />;
+          })()}
 
           {section === "copy" &&
             adSets.map((set, i) => (

@@ -91,7 +91,7 @@ function PromptEditor({
 }
 
 /** Saves edited fields on a prompt; returns the updated row. */
-async function savePrompt<T>(kind: "image" | "landing", id: string, values: Record<string, string>): Promise<T> {
+async function savePrompt<T>(kind: "image" | "landing" | "video", id: string, values: Record<string, string>): Promise<T> {
   const res = await fetch(`/api/${kind}-prompts/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -239,6 +239,152 @@ export function ImagePrompts({ owner, angles }: { owner: ImagePromptOwner; angle
             )}
             {p.notes && <p className="text-xs text-neutral-500">💡 {p.notes}</p>}
             </>
+            )}
+          </div>
+        ))
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------- video ads
+
+type VideoPlatform = "higgsfield" | "veo" | "sora";
+type VideoAspect = "9:16" | "4:5" | "1:1";
+const VIDEO_PLATFORM_LABELS: Record<VideoPlatform, string> = { higgsfield: "Higgsfield", veo: "Google Veo", sora: "OpenAI Sora" };
+const VIDEO_ASPECT_LABELS: Record<VideoAspect, string> = { "9:16": "9:16 — Reels / Stories (recommended)", "4:5": "4:5 — Feed", "1:1": "1:1 — Square feed" };
+
+interface VideoPrompt {
+  id: string;
+  angle_index: number;
+  platform: VideoPlatform;
+  aspect: VideoAspect;
+  prompt: string;
+  voiceover: string;
+  notes: string;
+  created_at: string;
+}
+
+/** Writes and keeps AI-video prompts (a shot list from the ad's video script) for one item's angle(s). */
+export function VideoPrompts({ owner, angles }: { owner: ImagePromptOwner; angles: { index: number; name: string }[] }) {
+  const [prompts, setPrompts] = useState<VideoPrompt[] | null>(null);
+  const [platform, setPlatform] = useState<VideoPlatform>("higgsfield");
+  const [aspect, setAspect] = useState<VideoAspect>("9:16");
+  const [angleIndex, setAngleIndex] = useState(angles[0]?.index ?? 0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const query = new URLSearchParams(owner as Record<string, string>).toString();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/video-prompts?${query}`)
+      .then(readJson)
+      .then((d) => { if (!cancelled) setPrompts(d.prompts as VideoPrompt[]); })
+      .catch((e) => { if (!cancelled) { setError(e.message); setPrompts([]); } });
+    return () => { cancelled = true; };
+  }, [query]);
+
+  async function generate() {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/video-prompts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...owner, angleIndex, platform, aspect }),
+      });
+      const d = await readJson(res);
+      setPrompts((prev) => [d.prompt as VideoPrompt, ...(prev ?? [])]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not write the prompt.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(id: string) {
+    try {
+      await readJson(await fetch(`/api/video-prompts/${id}`, { method: "DELETE" }));
+      setPrompts((prev) => prev?.filter((p) => p.id !== id) ?? null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete.");
+    }
+  }
+
+  const angleName = (i: number) => angles.find((a) => a.index === i)?.name ?? `Angle ${i + 1}`;
+
+  return (
+    <section className="space-y-3 rounded-xl border border-orange-300 bg-orange-500/5 p-4">
+      <div>
+        <h4 className="font-semibold">🎬 Video prompt</h4>
+        <p className="text-xs text-neutral-500">A shot-by-shot prompt pack written from this ad&apos;s video script. Paste each shot into the tool, then cut the clips together.</p>
+      </div>
+      <div className="flex flex-wrap items-end gap-2">
+        {angles.length > 1 && (
+          <label className="text-xs">Angle
+            <select className={`${selectClass} mt-1 block`} value={angleIndex} onChange={(e) => setAngleIndex(Number(e.target.value))}>
+              {angles.map((a) => <option key={a.index} value={a.index}>{a.name}</option>)}
+            </select>
+          </label>
+        )}
+        <label className="text-xs">Tool
+          <select className={`${selectClass} mt-1 block`} value={platform} onChange={(e) => setPlatform(e.target.value as VideoPlatform)}>
+            {(Object.keys(VIDEO_PLATFORM_LABELS) as VideoPlatform[]).map((p) => <option key={p} value={p}>{VIDEO_PLATFORM_LABELS[p]}</option>)}
+          </select>
+        </label>
+        <label className="text-xs">Size
+          <select className={`${selectClass} mt-1 block`} value={aspect} onChange={(e) => setAspect(e.target.value as VideoAspect)}>
+            {(Object.keys(VIDEO_ASPECT_LABELS) as VideoAspect[]).map((a) => <option key={a} value={a}>{VIDEO_ASPECT_LABELS[a]}</option>)}
+          </select>
+        </label>
+        <button disabled={busy} onClick={generate} className={primaryButton}>{busy ? "Writing prompt… (up to a minute)" : "Write video prompt"}</button>
+      </div>
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {prompts === null ? (
+        <p className="text-sm text-neutral-400">Loading…</p>
+      ) : (
+        prompts.map((p) => (
+          <div key={p.id} className="space-y-2 rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500">
+              <span>{VIDEO_PLATFORM_LABELS[p.platform]} · {p.aspect}{angles.length > 1 ? ` · ${angleName(p.angle_index)}` : ""} · {new Date(p.created_at).toLocaleDateString()}</span>
+              {editingId !== p.id && (
+                <span className="flex items-center gap-3">
+                  <CopyButton text={p.prompt} />
+                  <button onClick={() => setEditingId(p.id)} className={editLink}>Edit</button>
+                  <DeleteLink onConfirm={() => remove(p.id)} />
+                </span>
+              )}
+            </div>
+            {editingId === p.id ? (
+              <PromptEditor
+                fields={[
+                  { key: "prompt", label: "Prompt", rows: 14 },
+                  { key: "voiceover", label: "Voiceover", rows: 5 },
+                  { key: "notes", label: "Notes", rows: 2 },
+                ]}
+                initial={{ prompt: p.prompt, voiceover: p.voiceover, notes: p.notes }}
+                onCancel={() => setEditingId(null)}
+                onSave={async (values) => {
+                  const updated = await savePrompt<VideoPrompt>("video", p.id, values);
+                  setPrompts((prev) => prev?.map((x) => (x.id === updated.id ? updated : x)) ?? null);
+                  setEditingId(null);
+                }}
+              />
+            ) : (
+              <>
+                <p className="whitespace-pre-wrap text-sm">{p.prompt}</p>
+                {p.voiceover && (
+                  <div className="space-y-1 rounded bg-neutral-100 p-2 text-sm dark:bg-neutral-800">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold uppercase text-neutral-500">Voiceover</span>
+                      <CopyButton text={p.voiceover} label="Copy voiceover" />
+                    </div>
+                    <p className="whitespace-pre-wrap">{p.voiceover}</p>
+                  </div>
+                )}
+                {p.notes && <p className="whitespace-pre-wrap text-xs text-neutral-500">💡 {p.notes}</p>}
+              </>
             )}
           </div>
         ))
@@ -399,6 +545,138 @@ export function LandingPrompts({ funnelSetId, stage, adCount }: { funnelSetId: s
             ))
           )}
         </div>
+      )}
+    </section>
+  );
+}
+
+/** Writes and keeps a funnel (landing) page prompt for ONE ad angle — the page that ad's click lands on. */
+export function AdLandingPrompts({ owner, angles }: { owner: ImagePromptOwner; angles: { index: number; name: string }[] }) {
+  const [prompts, setPrompts] = useState<LandingPrompt[] | null>(null);
+  const [goal, setGoal] = useState<Goal>("email_phone");
+  const [builder, setBuilder] = useState<Builder>("ai_builder");
+  const [offer, setOffer] = useState("");
+  const [angleIndex, setAngleIndex] = useState(angles[0]?.index ?? 0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const query = new URLSearchParams(owner as Record<string, string>).toString();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/landing-prompts?${query}`)
+      .then(readJson)
+      .then((d) => { if (!cancelled) setPrompts(d.prompts as LandingPrompt[]); })
+      .catch((e) => { if (!cancelled) { setError(e.message); setPrompts([]); } });
+    return () => { cancelled = true; };
+  }, [query]);
+
+  async function generate() {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/landing-prompts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...owner, angleIndex, goal, builder, offer }),
+      });
+      const d = await readJson(res);
+      setPrompts((prev) => [d.prompt as LandingPrompt, ...(prev ?? [])]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not write the prompt.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(id: string) {
+    try {
+      await readJson(await fetch(`/api/landing-prompts/${id}`, { method: "DELETE" }));
+      setPrompts((prev) => prev?.filter((p) => p.id !== id) ?? null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete.");
+    }
+  }
+
+  return (
+    <section className="space-y-3 rounded-xl border border-orange-300 bg-orange-500/5 p-4">
+      <div>
+        <h4 className="font-semibold">🧲 Funnel page prompt</h4>
+        <p className="text-xs text-neutral-500">A landing page written to match this one ad, so the click feels continuous. Paste it into your page builder.</p>
+      </div>
+      <div className="flex flex-wrap items-end gap-2">
+        {angles.length > 1 && (
+          <label className="text-xs">Angle
+            <select className={`${selectClass} mt-1 block`} value={angleIndex} onChange={(e) => setAngleIndex(Number(e.target.value))}>
+              {angles.map((a) => <option key={a.index} value={a.index}>{a.name}</option>)}
+            </select>
+          </label>
+        )}
+        <label className="text-xs">Page goal
+          <select className={`${selectClass} mt-1 block`} value={goal} onChange={(e) => setGoal(e.target.value as Goal)}>
+            {(Object.keys(GOAL_LABELS) as Goal[]).map((g) => <option key={g} value={g}>{GOAL_LABELS[g]}</option>)}
+          </select>
+        </label>
+        <label className="text-xs">Where you&apos;ll build it
+          <select className={`${selectClass} mt-1 block`} value={builder} onChange={(e) => setBuilder(e.target.value as Builder)}>
+            {(Object.keys(BUILDER_LABELS) as Builder[]).map((b) => <option key={b} value={b}>{BUILDER_LABELS[b]}</option>)}
+          </select>
+        </label>
+      </div>
+      <label className="block text-xs">
+        {goal === "download" ? "The downloadable — what it is and what's inside (required)" : "Offer details or anything the page must include (optional)"}
+        <textarea
+          rows={3}
+          value={offer}
+          onChange={(e) => setOffer(e.target.value)}
+          placeholder={goal === "download" ? 'e.g. "First 90 Days Survival Checklist" — PDF, 12 pages: insurance, factoring, compliance calendar…' : "e.g. free 15-min authority review, bonus, deadline…"}
+          className="mt-1 w-full rounded-lg border border-neutral-300 bg-white p-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+        />
+      </label>
+      <button disabled={busy || (goal === "download" && !offer.trim())} onClick={generate} className={primaryButton}>
+        {busy ? "Writing prompt… (about a minute — keep this page open)" : "Write funnel page prompt"}
+      </button>
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {prompts === null ? (
+        <p className="text-sm text-neutral-400">Loading…</p>
+      ) : (
+        prompts.map((p) => (
+          <div key={p.id} className="space-y-2 rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500">
+              <span>{GOAL_LABELS[p.goal]} · {BUILDER_LABELS[p.builder]} · {new Date(p.created_at).toLocaleDateString()}</span>
+              {editingId !== p.id && (
+                <span className="flex items-center gap-3">
+                  <CopyButton text={p.prompt} />
+                  <button onClick={() => setEditingId(p.id)} className={editLink}>Edit</button>
+                  <DeleteLink onConfirm={() => remove(p.id)} />
+                </span>
+              )}
+            </div>
+            {editingId === p.id ? (
+              <PromptEditor
+                fields={[
+                  { key: "prompt", label: "Prompt", rows: 18 },
+                  { key: "notes", label: "Notes", rows: 3 },
+                ]}
+                initial={{ prompt: p.prompt, notes: p.notes }}
+                onCancel={() => setEditingId(null)}
+                onSave={async (values) => {
+                  const updated = await savePrompt<LandingPrompt>("landing", p.id, values);
+                  setPrompts((prev) => prev?.map((x) => (x.id === updated.id ? updated : x)) ?? null);
+                  setEditingId(null);
+                }}
+              />
+            ) : (
+              <>
+                <details>
+                  <summary className="cursor-pointer text-sm text-orange-600">Show the prompt</summary>
+                  <p className="mt-2 whitespace-pre-wrap text-sm">{p.prompt}</p>
+                </details>
+                {p.notes && <p className="whitespace-pre-wrap text-xs text-neutral-500">💡 {p.notes}</p>}
+              </>
+            )}
+          </div>
+        ))
       )}
     </section>
   );

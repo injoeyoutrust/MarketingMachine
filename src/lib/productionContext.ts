@@ -39,3 +39,35 @@ export async function levelAdSets(db: Db, funnelSetId: string, stage: FunnelStag
   const copy = (contributions ?? []).flatMap(c => (c.copy as FunnelCopy).adSets ?? []);
   return [...placed, ...copy];
 }
+
+const UUID = /^[0-9a-f-]{36}$/i;
+
+/** Which saved item a per-ad prompt belongs to: an ad placement or a piece of level copy. */
+export function adOwner(p: { placementId?: unknown; contributionId?: unknown }) {
+  if (typeof p.placementId === 'string' && UUID.test(p.placementId)) return { column: 'placement_id', id: p.placementId } as const;
+  if (typeof p.contributionId === 'string' && UUID.test(p.contributionId)) return { column: 'contribution_id', id: p.contributionId } as const;
+  return null;
+}
+
+/** Loads one ad angle and its funnel level from the database (never trusts the browser for copy). */
+export async function resolveAdAngle(db: Db, o: NonNullable<ReturnType<typeof adOwner>>, angleIndex: number) {
+  let adSet: AdSet | undefined;
+  let projectId: string;
+  let stage: FunnelStage;
+  if (o.column === 'placement_id') {
+    const { data: p } = await db.from('funnel_placements').select('*').eq('id', o.id).single();
+    if (!p) return { error: 'That ad is no longer in this level.', status: 404 } as const;
+    const { data: run } = await db.from('campaign_runs').select('kit').eq('id', p.run_id).single();
+    adSet = (run?.kit as { adSets?: AdSet[] })?.adSets?.[angleIndex];
+    projectId = p.funnel_set_id; stage = p.stage;
+  } else {
+    const { data: c } = await db.from('funnel_contributions').select('*').eq('id', o.id).single();
+    if (!c) return { error: 'That item no longer exists.', status: 404 } as const;
+    adSet = (c.copy as FunnelCopy).adSets?.[angleIndex];
+    projectId = c.project_id; stage = c.stage;
+  }
+  if (!adSet) return { error: "That angle doesn't exist on this ad.", status: 400 } as const;
+  const { data: project } = await db.from('funnel_projects').select('*').eq('id', projectId).single();
+  if (!project) return { error: 'Funnel not found.', status: 404 } as const;
+  return { adSet, project: project as FunnelProject, projectId, stage } as const;
+}
