@@ -19,7 +19,7 @@ const GOAL_GUIDE: Record<Goal, string> = {
   book_call: `Page goal: get a qualified visitor to book a call. Short form (name, email, phone) followed by a calendar embed placeholder. Set expectations for the call (length, what's covered, no pressure).`,
 };
 
-const BUILDER_GUIDE: Record<Builder, string> = {
+export const BUILDER_GUIDE: Record<Builder, string> = {
   ai_builder: `Target tool: an AI site builder (Lovable, Bolt, v0 or similar). Write the prompt as a build instruction: the page's purpose, then every section in order with its full final copy, layout, the form fields and validation, the thank-you state, mobile-first responsive behaviour, visual style (colours, type, imagery), and speed/accessibility basics. Tell it to submit the form to a placeholder endpoint (e.g. a clearly marked FORM_WEBHOOK_URL constant) that the user will replace with their CRM/webhook.`,
   html: `Target tool: ChatGPT or Claude, asked to produce a single self-contained HTML file (inline CSS, minimal vanilla JS). Write the prompt as a build instruction with every section and its full final copy, form fields and validation, thank-you state, mobile-first layout and visual style. Form posts to a clearly marked FORM_WEBHOOK_URL placeholder.`,
   manual: `Target: the user builds the page by hand in a page builder (GoHighLevel, ClickFunnels, Framer, Webflow). Write a section-by-section build brief: for each section, the layout, the exact copy to paste, the image to use, and any element settings (form fields, button text, redirect). No code.`,
@@ -34,6 +34,7 @@ Rules:
 - Never invent proof. Where testimonials, stats, logos, results or credentials would go, insert clearly marked placeholders like [ADD REAL TESTIMONIAL] unless the context provides them.
 - Because the phone number will receive SMS, include an unchecked-by-default consent checkbox under the phone field with placeholder text such as "[ADD SMS CONSENT LANGUAGE — have this reviewed]", plus footer links to Privacy Policy and Terms placeholders.
 - Keep the form as short as the goal allows; spec inline validation and a clear success state.
+- Lead routing: the form includes qualifying questions that decide which page the visitor lands on after submitting. The user writes those questions and decides which answers qualify or disqualify, so never invent them or the criteria. Add a clearly marked block under the contact fields such as [ADD QUALIFYING QUESTIONS — multiple choice, answers decide routing], and spec the submit behaviour: a qualified (dream client) lead goes to the pixel page, a disqualified lead goes to the thank-you page, both using redirect URL placeholders [PIXEL PAGE URL] and [THANK-YOU PAGE URL]. Both pages get created after this one, and both capture the lead the same way in the CRM; only the redirect differs.
 
 Fields:
 - prompt: the complete, paste-ready prompt or build brief.

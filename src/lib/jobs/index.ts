@@ -1,13 +1,14 @@
 import { supabaseServer } from '../supabaseServer';
 import { JobError } from './error';
+import { runFollowupJob } from './followup';
 import { runImageJob } from './image';
 import { runLandingJob } from './landing';
 import { runVideoJob } from './video';
 
-export const JOB_KINDS = ['image', 'video', 'landing'] as const;
+export const JOB_KINDS = ['image', 'video', 'landing', 'followup'] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
 
-const RUNNERS = { image: runImageJob, video: runVideoJob, landing: runLandingJob } as const;
+const RUNNERS = { image: runImageJob, video: runVideoJob, landing: runLandingJob, followup: runFollowupJob } as const;
 
 /**
  * Runs one queued prompt job to completion and records the outcome on its row.

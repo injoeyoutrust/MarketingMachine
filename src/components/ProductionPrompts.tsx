@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { STAGE_LABELS, type FunnelStage } from "@/lib/funnels";
 
 /** Parses an API response, turning an empty/non-JSON body into a readable error. */
@@ -53,10 +53,11 @@ function CopyButton({ text, label = "Copy prompt" }: { text: string; label?: str
   );
 }
 
-function DeleteLink({ onConfirm }: { onConfirm: () => void }) {
+function DeleteLink({ onConfirm, warn }: { onConfirm: () => void; warn?: string }) {
   const [asking, setAsking] = useState(false);
   return asking ? (
-    <span className="flex gap-2">
+    <span className="flex flex-wrap items-center gap-2">
+      {warn && <span className="text-neutral-500">{warn}</span>}
       <button onClick={onConfirm} className="font-semibold text-red-600 underline">Yes, delete</button>
       <button onClick={() => setAsking(false)} className="text-neutral-500 underline">Cancel</button>
     </span>
@@ -424,7 +425,118 @@ interface LandingPrompt {
   prompt: string;
   notes: string;
   source_labels?: string[];
+  /** "funnel" is the lead-capture page; thank_you / pixel are the pages written to follow it. */
+  page_type?: PageType;
+  parent_id?: string | null;
   created_at: string;
+}
+
+type PageType = "funnel" | "thank_you" | "pixel";
+const FOLLOWUP_TYPES = ["thank_you", "pixel"] as const;
+
+/** Writes both follow-up pages for a saved funnel page at once. Keeps whichever succeed. */
+async function writeFollowups(parentId: string): Promise<{ pages: LandingPrompt[]; error: string }> {
+  const results = await Promise.allSettled(FOLLOWUP_TYPES.map((pageType) => runPromptJob<LandingPrompt>("/api/landing-prompts", { parentId, pageType })));
+  const pages = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+  const failed = results.find((r): r is PromiseRejectedResult => r.status === "rejected");
+  return { pages, error: failed ? (failed.reason instanceof Error ? failed.reason.message : "Could not write a follow-up page.") : "" };
+}
+
+const FOLLOWUP_LABEL = "Also write the thank-you page and pixel page";
+
+/** The saved landing prompts, grouped: funnel pages, then their thank-you pages, then their pixel pages. */
+function LandingGroups({ prompts, setPrompts, showFor, onError }: { prompts: LandingPrompt[]; setPrompts: Dispatch<SetStateAction<LandingPrompt[] | null>>; showFor?: boolean; onError: (message: string) => void }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [followupBusy, setFollowupBusy] = useState<string | null>(null);
+  const typeOf = (p: LandingPrompt): PageType => p.page_type ?? "funnel";
+  const funnel = prompts.filter((p) => typeOf(p) === "funnel");
+  // Follow-ups nest inside their funnel page's card; any whose funnel page isn't in this list stand alone.
+  const orphans = prompts.filter((p) => typeOf(p) !== "funnel" && !funnel.some((f) => f.id === p.parent_id));
+
+  async function remove(id: string) {
+    try {
+      await readJson(await fetch(`/api/landing-prompts/${id}`, { method: "DELETE" }));
+      // Deleting a funnel page also deletes the pages that follow it.
+      setPrompts((prev) => prev?.filter((p) => p.id !== id && p.parent_id !== id) ?? null);
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "Could not delete.");
+    }
+  }
+
+  async function followups(parent: LandingPrompt) {
+    setFollowupBusy(parent.id);
+    onError("");
+    const { pages, error } = await writeFollowups(parent.id);
+    setPrompts((prev) => [...pages, ...(prev ?? [])]);
+    if (error) onError(`Some follow-up pages could not be written: ${error}`);
+    setFollowupBusy(null);
+  }
+
+  const card = (p: LandingPrompt, nested = false) => {
+    const type = typeOf(p);
+    const children = prompts.filter((c) => c.parent_id === p.id);
+    return (
+      <div key={p.id} className={`space-y-2 rounded-lg border p-3 ${nested ? "border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950" : "border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900"}`}>
+        {type !== "funnel" && <p className="text-sm font-semibold">{type === "thank_you" ? "Thank-you page" : "Pixel page"} <span className="font-normal text-neutral-500">· {type === "thank_you" ? "not the dream client" : "dream client — where the pixel is set"}</span></p>}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500">
+          <span>
+            {GOAL_LABELS[p.goal]} · {BUILDER_LABELS[p.builder]} · {new Date(p.created_at).toLocaleDateString()}
+            {showFor && <><br /><strong className="font-semibold">For: </strong>{p.source_labels?.length ? p.source_labels.join(" + ") : "all ads in this level"}</>}
+          </span>
+          {editingId !== p.id && (
+            <span className="flex items-center gap-3">
+              <CopyButton text={p.prompt} />
+              <button onClick={() => setEditingId(p.id)} className={editLink}>Edit</button>
+              <DeleteLink onConfirm={() => remove(p.id)} warn={type === "funnel" && children.length ? "Also deletes its follow-up pages." : undefined} />
+            </span>
+          )}
+        </div>
+        {editingId === p.id ? (
+          <PromptEditor
+            fields={[
+              { key: "prompt", label: "Prompt", rows: 18 },
+              { key: "notes", label: "Notes", rows: 3 },
+            ]}
+            initial={{ prompt: p.prompt, notes: p.notes }}
+            onCancel={() => setEditingId(null)}
+            onSave={async (values) => {
+              const updated = await savePrompt<LandingPrompt>("landing", p.id, values);
+              setPrompts((prev) => prev?.map((x) => (x.id === updated.id ? updated : x)) ?? null);
+              setEditingId(null);
+            }}
+          />
+        ) : (
+          <>
+            <details>
+              <summary className="cursor-pointer text-sm text-orange-600">Show the prompt</summary>
+              <p className="mt-2 whitespace-pre-wrap text-sm">{p.prompt}</p>
+            </details>
+            {p.notes && <p className="whitespace-pre-wrap text-xs text-neutral-500">💡 {p.notes}</p>}
+            {type === "funnel" && (
+              <div className="flex flex-wrap items-center gap-3 border-t border-neutral-200 pt-2 dark:border-neutral-800">
+                <button disabled={followupBusy === p.id} onClick={() => followups(p)} className="rounded-lg border border-orange-400 px-3 py-1 text-xs font-semibold text-orange-700 hover:bg-orange-500/10 disabled:opacity-50 dark:text-orange-300">
+                  {followupBusy === p.id ? "Writing both pages… (about a minute)" : children.length ? "Write them again" : "Write thank-you + pixel pages"}
+                </button>
+                <span className="text-xs text-neutral-500">{children.length ? `${children.filter((c) => typeOf(c) === "thank_you").length} thank-you · ${children.filter((c) => typeOf(c) === "pixel").length} pixel written` : "Follow-up pages for this funnel page"}</span>
+              </div>
+            )}
+            {type === "funnel" && children.length > 0 && (
+              <div className="space-y-2 border-l-2 border-orange-300 pl-3">
+                {[...children.filter((c) => typeOf(c) === "thank_you"), ...children.filter((c) => typeOf(c) === "pixel")].map((c) => card(c, true))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      {funnel.map((p) => card(p))}
+      {orphans.map((p) => card(p))}
+    </div>
+  );
 }
 
 /** One ad angle in a funnel level that a page can be written for. */
@@ -444,7 +556,7 @@ export function LandingPrompts({ funnelSetId, stage, items }: { funnelSetId: str
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [withFollowups, setWithFollowups] = useState(true);
   const [unticked, setUnticked] = useState<Set<string>>(new Set());
   const [pageMode, setPageMode] = useState<"one" | "each">("one");
   const chosen = items.filter((it) => !unticked.has(it.key));
@@ -463,6 +575,12 @@ export function LandingPrompts({ funnelSetId, stage, items }: { funnelSetId: str
   async function write(sources: LevelAdItem["source"][]) {
     const prompt = await runPromptJob<LandingPrompt>("/api/landing-prompts", { funnelSetId, stage, goal, builder, offer, sources });
     setPrompts((prev) => [prompt, ...(prev ?? [])]);
+    if (withFollowups) {
+      setProgress("Writing the thank-you and pixel pages…");
+      const { pages, error: followupError } = await writeFollowups(prompt.id);
+      setPrompts((prev) => [...pages, ...(prev ?? [])]);
+      if (followupError) setError(`Funnel page saved, but some follow-up pages could not be written: ${followupError}`);
+    }
   }
 
   async function generate() {
@@ -483,15 +601,6 @@ export function LandingPrompts({ funnelSetId, stage, items }: { funnelSetId: str
     } finally {
       setBusy(false);
       setProgress("");
-    }
-  }
-
-  async function remove(id: string) {
-    try {
-      await readJson(await fetch(`/api/landing-prompts/${id}`, { method: "DELETE" }));
-      setPrompts((prev) => prev?.filter((p) => p.id !== id) ?? null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not delete.");
     }
   }
 
@@ -566,6 +675,10 @@ export function LandingPrompts({ funnelSetId, stage, items }: { funnelSetId: str
               className="mt-1 w-full rounded-lg border border-neutral-300 bg-white p-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
             />
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={withFollowups} onChange={(e) => setWithFollowups(e.target.checked)} />
+            {FOLLOWUP_LABEL} <span className="text-neutral-500">(written to match each funnel page)</span>
+          </label>
           <button disabled={busy || chosen.length === 0 || (goal === "download" && !offer.trim())} onClick={generate} className={primaryButton}>
             {busy ? `${progress || "Writing prompt…"} (about a minute each — keep this page open)` : pageMode === "each" && chosen.length > 1 ? `Write ${chosen.length} landing page prompts` : "Write landing page prompt"}
           </button>
@@ -573,43 +686,7 @@ export function LandingPrompts({ funnelSetId, stage, items }: { funnelSetId: str
           {list === null ? (
             <p className="text-sm text-neutral-400">Loading…</p>
           ) : (
-            list.map((p) => (
-              <div key={p.id} className="space-y-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500">
-                  <span>{GOAL_LABELS[p.goal]} · {BUILDER_LABELS[p.builder]} · {new Date(p.created_at).toLocaleDateString()}<br /><strong className="font-semibold">For: </strong>{p.source_labels?.length ? p.source_labels.join(" + ") : "all ads in this level"}</span>
-                  {editingId !== p.id && (
-                    <span className="flex items-center gap-3">
-                      <CopyButton text={p.prompt} />
-                      <button onClick={() => setEditingId(p.id)} className={editLink}>Edit</button>
-                      <DeleteLink onConfirm={() => remove(p.id)} />
-                    </span>
-                  )}
-                </div>
-                {editingId === p.id ? (
-                  <PromptEditor
-                    fields={[
-                      { key: "prompt", label: "Prompt", rows: 18 },
-                      { key: "notes", label: "Notes", rows: 3 },
-                    ]}
-                    initial={{ prompt: p.prompt, notes: p.notes }}
-                    onCancel={() => setEditingId(null)}
-                    onSave={async (values) => {
-                      const updated = await savePrompt<LandingPrompt>("landing", p.id, values);
-                      setPrompts((prev) => prev?.map((x) => (x.id === updated.id ? updated : x)) ?? null);
-                      setEditingId(null);
-                    }}
-                  />
-                ) : (
-                  <>
-                    <details>
-                      <summary className="cursor-pointer text-sm text-orange-600">Show the prompt</summary>
-                      <p className="mt-2 whitespace-pre-wrap text-sm">{p.prompt}</p>
-                    </details>
-                    {p.notes && <p className="whitespace-pre-wrap text-xs text-neutral-500">💡 {p.notes}</p>}
-                  </>
-                )}
-              </div>
-            ))
+            <LandingGroups prompts={list} setPrompts={setPrompts} showFor onError={setError} />
           )}
         </div>
       )}
@@ -626,7 +703,7 @@ export function AdLandingPrompts({ owner, angles }: { owner: ImagePromptOwner; a
   const [angleIndex, setAngleIndex] = useState(angles[0]?.index ?? 0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [withFollowups, setWithFollowups] = useState(true);
   const query = new URLSearchParams(owner as Record<string, string>).toString();
 
   useEffect(() => {
@@ -644,19 +721,15 @@ export function AdLandingPrompts({ owner, angles }: { owner: ImagePromptOwner; a
     try {
       const prompt = await runPromptJob<LandingPrompt>("/api/landing-prompts", { ...owner, angleIndex, goal, builder, offer });
       setPrompts((prev) => [prompt, ...(prev ?? [])]);
+      if (withFollowups) {
+        const { pages, error: followupError } = await writeFollowups(prompt.id);
+        setPrompts((prev) => [...pages, ...(prev ?? [])]);
+        if (followupError) setError(`Funnel page saved, but some follow-up pages could not be written: ${followupError}`);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not write the prompt.");
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function remove(id: string) {
-    try {
-      await readJson(await fetch(`/api/landing-prompts/${id}`, { method: "DELETE" }));
-      setPrompts((prev) => prev?.filter((p) => p.id !== id) ?? null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not delete.");
     }
   }
 
@@ -695,6 +768,10 @@ export function AdLandingPrompts({ owner, angles }: { owner: ImagePromptOwner; a
           className="mt-1 w-full rounded-lg border border-neutral-300 bg-white p-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
         />
       </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={withFollowups} onChange={(e) => setWithFollowups(e.target.checked)} />
+        {FOLLOWUP_LABEL}
+      </label>
       <button disabled={busy || (goal === "download" && !offer.trim())} onClick={generate} className={primaryButton}>
         {busy ? "Writing prompt… (about a minute — keep this page open)" : "Write funnel page prompt"}
       </button>
@@ -702,43 +779,7 @@ export function AdLandingPrompts({ owner, angles }: { owner: ImagePromptOwner; a
       {prompts === null ? (
         <p className="text-sm text-neutral-400">Loading…</p>
       ) : (
-        prompts.map((p) => (
-          <div key={p.id} className="space-y-2 rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500">
-              <span>{GOAL_LABELS[p.goal]} · {BUILDER_LABELS[p.builder]} · {new Date(p.created_at).toLocaleDateString()}</span>
-              {editingId !== p.id && (
-                <span className="flex items-center gap-3">
-                  <CopyButton text={p.prompt} />
-                  <button onClick={() => setEditingId(p.id)} className={editLink}>Edit</button>
-                  <DeleteLink onConfirm={() => remove(p.id)} />
-                </span>
-              )}
-            </div>
-            {editingId === p.id ? (
-              <PromptEditor
-                fields={[
-                  { key: "prompt", label: "Prompt", rows: 18 },
-                  { key: "notes", label: "Notes", rows: 3 },
-                ]}
-                initial={{ prompt: p.prompt, notes: p.notes }}
-                onCancel={() => setEditingId(null)}
-                onSave={async (values) => {
-                  const updated = await savePrompt<LandingPrompt>("landing", p.id, values);
-                  setPrompts((prev) => prev?.map((x) => (x.id === updated.id ? updated : x)) ?? null);
-                  setEditingId(null);
-                }}
-              />
-            ) : (
-              <>
-                <details>
-                  <summary className="cursor-pointer text-sm text-orange-600">Show the prompt</summary>
-                  <p className="mt-2 whitespace-pre-wrap text-sm">{p.prompt}</p>
-                </details>
-                {p.notes && <p className="whitespace-pre-wrap text-xs text-neutral-500">💡 {p.notes}</p>}
-              </>
-            )}
-          </div>
-        ))
+        <LandingGroups prompts={prompts} setPrompts={setPrompts} onError={setError} />
       )}
     </section>
   );

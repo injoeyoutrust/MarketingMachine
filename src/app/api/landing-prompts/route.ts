@@ -25,5 +25,6 @@ export async function GET(req: NextRequest) {
 /** Queues the writing job (a minute of Claude time) and returns its id for the page to poll. */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
-  return startPromptJob('landing', body, new URL(req.url).origin);
+  // A parentId means "write the thank-you / pixel page that follows this funnel page".
+  return startPromptJob(body?.parentId ? 'followup' : 'landing', body, new URL(req.url).origin);
 }
