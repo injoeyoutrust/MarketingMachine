@@ -12,6 +12,28 @@ async function readJson(res: Response) {
   return data;
 }
 
+/**
+ * Starts a prompt-writing job and waits for it. Writing takes about a minute —
+ * longer than a hosted web request may live — so the server queues the job,
+ * runs it in the background, and we poll until it is done.
+ */
+async function runPromptJob<T>(url: string, body: unknown): Promise<T> {
+  const start = await readJson(await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }));
+  const deadline = Date.now() + 10 * 60 * 1000;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 3000));
+    let job: { status?: string; prompt?: unknown; error?: string };
+    try {
+      job = await readJson(await fetch(`/api/jobs/${start.jobId}`));
+    } catch {
+      continue; // a dropped poll is not a failed job — keep waiting
+    }
+    if (job.status === "done") return job.prompt as T;
+    if (job.status === "error") throw new Error(job.error ?? "Could not write the prompt. Please retry.");
+  }
+  throw new Error("This is taking too long. Check back in a minute — if it finished, it will be in the list after a refresh.");
+}
+
 const selectClass = "rounded-lg border border-neutral-300 bg-white p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900";
 const primaryButton = "rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-500 disabled:opacity-50";
 
@@ -146,13 +168,8 @@ export function ImagePrompts({ owner, angles }: { owner: ImagePromptOwner; angle
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/image-prompts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...owner, angleIndex, platform, aspect }),
-      });
-      const d = await readJson(res);
-      setPrompts((prev) => [d.prompt as ImagePrompt, ...(prev ?? [])]);
+      const prompt = await runPromptJob<ImagePrompt>("/api/image-prompts", { ...owner, angleIndex, platform, aspect });
+      setPrompts((prev) => [prompt, ...(prev ?? [])]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not write the prompt.");
     } finally {
@@ -289,13 +306,8 @@ export function VideoPrompts({ owner, angles }: { owner: ImagePromptOwner; angle
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/video-prompts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...owner, angleIndex, platform, aspect }),
-      });
-      const d = await readJson(res);
-      setPrompts((prev) => [d.prompt as VideoPrompt, ...(prev ?? [])]);
+      const prompt = await runPromptJob<VideoPrompt>("/api/video-prompts", { ...owner, angleIndex, platform, aspect });
+      setPrompts((prev) => [prompt, ...(prev ?? [])]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not write the prompt.");
     } finally {
@@ -449,13 +461,8 @@ export function LandingPrompts({ funnelSetId, stage, items }: { funnelSetId: str
   }, [funnelSetId, stage]);
 
   async function write(sources: LevelAdItem["source"][]) {
-    const res = await fetch("/api/landing-prompts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ funnelSetId, stage, goal, builder, offer, sources }),
-    });
-    const d = await readJson(res);
-    setPrompts((prev) => [d.prompt as LandingPrompt, ...(prev ?? [])]);
+    const prompt = await runPromptJob<LandingPrompt>("/api/landing-prompts", { funnelSetId, stage, goal, builder, offer, sources });
+    setPrompts((prev) => [prompt, ...(prev ?? [])]);
   }
 
   async function generate() {
@@ -635,13 +642,8 @@ export function AdLandingPrompts({ owner, angles }: { owner: ImagePromptOwner; a
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/landing-prompts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...owner, angleIndex, goal, builder, offer }),
-      });
-      const d = await readJson(res);
-      setPrompts((prev) => [d.prompt as LandingPrompt, ...(prev ?? [])]);
+      const prompt = await runPromptJob<LandingPrompt>("/api/landing-prompts", { ...owner, angleIndex, goal, builder, offer });
+      setPrompts((prev) => [prompt, ...(prev ?? [])]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not write the prompt.");
     } finally {
