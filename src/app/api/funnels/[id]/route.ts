@@ -14,3 +14,14 @@ export async function GET(_req: Request, context: { params: Promise<{ id: string
     return NextResponse.json({ project, contributions, placements });
   } catch { return NextResponse.json({ error: 'Could not load funnel copy.' }, { status: 500 }); }
 }
+
+/** Renames a funnel set. */
+export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
+  const body = await req.json().catch(() => null);
+  const label = typeof body?.label === 'string' ? body.label.trim() : '';
+  if (!label || label.length > 200) return NextResponse.json({ error: 'Enter a name up to 200 characters.' }, { status: 400 });
+  const { data, error } = await supabaseServer().from('funnel_projects').update({ label }).eq('id', id).select('*').single();
+  if (error || !data) return NextResponse.json({ error: 'Could not rename this funnel set.' }, { status: 500 });
+  return NextResponse.json({ project: data });
+}

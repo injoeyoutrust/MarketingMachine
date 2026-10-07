@@ -53,6 +53,8 @@ function KeepOneAngle({ entry, onKeep, disabled }: { entry: FunnelContribution; 
 export default function Home() {
   const [coldScript, setColdScript] = useState<ScriptOptions>(DEFAULT_SCRIPT_OPTIONS);
   const [funnelSets, setFunnelSets] = useState<FunnelProject[]>([]);
+  const [renaming, setRenaming] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
   const [project, setProject] = useState<FunnelProject | null>(null);
   const [contributions, setContributions] = useState<FunnelContribution[]>([]);
   const [placements, setPlacements] = useState<FunnelPlacement[]>([]);
@@ -111,6 +113,19 @@ export default function Home() {
   }
   function mergeContribution(entry: FunnelContribution) {
     setContributions(prev => prev.some(e => e.id === entry.id) ? prev : [...prev, entry]);
+  }
+  async function renameProject() {
+    if (!project) return;
+    const name = nameDraft.trim();
+    if (!name || name === project.label) { setRenaming(false); return; }
+    await work('Renaming…', async () => {
+      const res = await fetch(`/api/funnels/${project.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label: name }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not rename this funnel set.');
+      setProject(data.project);
+      setFunnelSets(prev => prev.map(p => (p.id === data.project.id ? data.project : p)));
+      setRenaming(false);
+    });
   }
   async function saveContributionField(contributionId: string, path: string, newValue: string) {
     if (!project) return;
@@ -294,7 +309,13 @@ export default function Home() {
           <button className="ml-4 text-sm underline" onClick={saveDraft}>Save setup draft in this browser</button>
         </fieldset>}
         </div> : <div className="space-y-6">
-          <div><h2 className="text-2xl font-bold">{project.label}</h2><p className="mt-1 text-sm text-neutral-500">Base copy + individual ads = growing nurture pools. Copy is for planning; nothing is sent automatically.</p></div>
+          <div>{renaming
+            ? <form className="flex flex-wrap items-center gap-2" onSubmit={e => { e.preventDefault(); void renameProject(); }}>
+                <input autoFocus value={nameDraft} onChange={e => setNameDraft(e.target.value)} maxLength={200} aria-label="Funnel set name" className="min-w-0 flex-1 rounded-lg border border-neutral-300 bg-white p-2 text-xl font-bold dark:border-neutral-700 dark:bg-neutral-900" />
+                <button type="submit" disabled={!!busy || !nameDraft.trim()} className={buttonClass}>Save name</button>
+                <button type="button" onClick={() => setRenaming(false)} className="text-sm underline">Cancel</button>
+              </form>
+            : <div className="flex flex-wrap items-center gap-3"><h2 className="text-2xl font-bold">{project.label}</h2><button type="button" disabled={!!busy} onClick={() => { setNameDraft(project.label); setRenaming(true); }} className="text-sm text-neutral-500 underline hover:text-neutral-800 dark:hover:text-neutral-200">Rename</button></div>}<p className="mt-1 text-sm text-neutral-500">Base copy + individual ads = growing nurture pools. Copy is for planning; nothing is sent automatically.</p></div>
           {hasIntake && <details className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"><summary className="cursor-pointer text-sm font-semibold">Master intake and funnel direction</summary><pre className="mt-3 whitespace-pre-wrap font-sans text-sm">{composeIntakeText(project.fields)}</pre>{FUNNEL_STAGES.map(s => <div key={s} className="mt-4 text-sm"><strong>{STAGE_LABELS[s]}</strong><p>{project.stages[s].idea}</p><p>Tone: {project.stages[s].tone}</p><p>Ad types: {project.stages[s].adTypes || 'Open to ideas'}</p></div>)}</details>}
           <FunnelPyramid counts={levelCounts} selected={stage} onSelect={openStage} disabled={!!busy} />
 
