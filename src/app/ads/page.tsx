@@ -12,7 +12,7 @@ import { ResultsTabs } from "@/components/ResultsTabs";
 import { OriginalEntryModal } from "@/components/OriginalEntryModal";
 import { EditLedgerModal } from "@/components/EditLedgerModal";
 import { AnglePicker } from "@/components/StageAdCard";
-import { loadRuns, saveRun, deleteRun, editRunField, placeAd, removePlacement } from "@/lib/storage";
+import { loadRuns, saveRun, deleteRun, editRunField, editRunEntry, placeAd, removePlacement } from "@/lib/storage";
 import { loadStyles } from "@/lib/styleStorage";
 import {
   emptyIntakeFields,
@@ -119,6 +119,8 @@ export default function AdsPage() {
   const [placementsFor, setPlacementsFor] = useState<{ runId: string; list: FunnelPlacement[] } | null>(null);
 
   const [label, setLabel] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
   const [mode, setMode] = useState<IntakeMode>("quick");
   const [quickIdea, setQuickIdea] = useState("");
   const [purePushIdea, setPurePushIdea] = useState("");
@@ -262,6 +264,28 @@ export default function AdsPage() {
       return;
     }
     setRuns((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  }
+
+  async function handleEntryEdit(entryKey: string, _fieldLabel: string, entryValue: string) {
+    if (!activeId) return;
+    const updated = await editRunEntry(activeId, { entryKey, entryValue });
+    if (!updated) {
+      setError("Couldn't save that edit — check the Supabase connection and try again.");
+      throw new Error("save failed");
+    }
+    setRuns((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  }
+
+  async function handleRename() {
+    const name = nameDraft.trim();
+    if (!activeId || !name || name === activeRun?.label) { setRenaming(false); return; }
+    const updated = await editRunEntry(activeId, { label: name });
+    if (!updated) {
+      setError("Couldn't rename this ad — check the Supabase connection and try again.");
+      return;
+    }
+    setRuns((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    setRenaming(false);
   }
 
   async function handleAddToFunnel() {
@@ -506,9 +530,27 @@ export default function AdsPage() {
             <div>
               <div className="mx-auto mb-4 flex max-w-5xl flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-                    {activeRun.label}
-                  </h2>
+                  {renaming ? (
+                    <form className="flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); void handleRename(); }}>
+                      <input
+                        autoFocus
+                        value={nameDraft}
+                        onChange={(e) => setNameDraft(e.target.value)}
+                        maxLength={200}
+                        aria-label="Ad name"
+                        className="min-w-0 rounded-lg border border-neutral-300 bg-white px-2 py-1 text-base font-semibold dark:border-neutral-700 dark:bg-neutral-900"
+                      />
+                      <button type="submit" disabled={!nameDraft.trim()} className="rounded-lg bg-orange-600 px-3 py-1 text-sm font-semibold text-white hover:bg-orange-500 disabled:opacity-50">Save name</button>
+                      <button type="button" onClick={() => setRenaming(false)} className="text-sm underline">Cancel</button>
+                    </form>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+                        {activeRun.label}
+                      </h2>
+                      <button type="button" onClick={() => { setNameDraft(activeRun.label); setRenaming(true); }} className="text-xs text-neutral-500 underline hover:text-neutral-800 dark:hover:text-neutral-200">Rename</button>
+                    </div>
+                  )}
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
                     {describeAngleEmotions(activeRun, styles).join(" · ")} — {activeRun.funnelStyleName} —{" "}
                     {activeRun.vslStyleName}
@@ -628,7 +670,7 @@ export default function AdsPage() {
                 />
               </div>
               {showOriginalEntry && (
-                <OriginalEntryModal run={activeRun} onClose={() => setShowOriginalEntry(false)} />
+                <OriginalEntryModal run={activeRun} onClose={() => setShowOriginalEntry(false)} onSaveEntry={handleEntryEdit} />
               )}
               {showEditLedger && (
                 <EditLedgerModal run={activeRun} onClose={() => setShowEditLedger(false)} />

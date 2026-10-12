@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { INTAKE_SECTIONS, QUICK_IDEA_KEY, PURE_PUSH_KEY } from "@/lib/intakeFields";
 import type { SavedRun } from "@/lib/types";
 import { CopyField } from "@/components/CopyField";
 
-export function OriginalEntryModal({ run, onClose }: { run: SavedRun; onClose: () => void }) {
+export function OriginalEntryModal({ run, onClose, onSaveEntry }: { run: SavedRun; onClose: () => void; onSaveEntry: (key: string, label: string, value: string) => Promise<void> }) {
   // Close on Escape, and lock background scroll while open.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -55,11 +55,11 @@ export function OriginalEntryModal({ run, onClose }: { run: SavedRun; onClose: (
 
         <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
           {purePush ? (
-            <CopyField label="Concept" value={purePush} />
+            <CopyField label="Concept" value={purePush} path={PURE_PUSH_KEY} onSave={(_p, l, v) => onSaveEntry(PURE_PUSH_KEY, l, v)} />
           ) : quickIdea ? (
-            <CopyField label="Idea" value={quickIdea} />
+            <CopyField label="Idea" value={quickIdea} path={QUICK_IDEA_KEY} onSave={(_p, l, v) => onSaveEntry(QUICK_IDEA_KEY, l, v)} />
           ) : (
-            <FullIntakeReadOnly fields={run.fields} />
+            <FullIntakeEditable fields={run.fields} onSaveEntry={onSaveEntry} />
           )}
         </div>
       </div>
@@ -67,25 +67,27 @@ export function OriginalEntryModal({ run, onClose }: { run: SavedRun; onClose: (
   );
 }
 
-function FullIntakeReadOnly({ fields }: { fields: Record<string, string> }) {
-  const sectionsWithAnswers = INTAKE_SECTIONS.map((section) => ({
+function FullIntakeEditable({ fields, onSaveEntry }: { fields: Record<string, string>; onSaveEntry: (key: string, label: string, value: string) => Promise<void> }) {
+  const [showEmpty, setShowEmpty] = useState(false);
+  const sections = INTAKE_SECTIONS.map((section) => ({
     ...section,
-    fields: section.fields.filter((f) => (fields[f.key] ?? "").trim().length > 0),
+    fields: section.fields.filter((f) => showEmpty || (fields[f.key] ?? "").trim().length > 0),
   })).filter((section) => section.fields.length > 0);
-
-  if (sectionsWithAnswers.length === 0) {
-    return <p className="text-sm text-neutral-500 dark:text-neutral-400">No fields were answered.</p>;
-  }
 
   return (
     <div className="space-y-5">
-      {sectionsWithAnswers.map((section) => (
+      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+        Edit any answer to correct the record. This doesn&apos;t rewrite the generated copy — use &quot;Edit intake &amp; regenerate&quot; for that.{" "}
+        <button type="button" onClick={() => setShowEmpty((v) => !v)} className="underline">{showEmpty ? "Hide unanswered questions" : "Show unanswered questions"}</button>
+      </p>
+      {sections.length === 0 && <p className="text-sm text-neutral-500 dark:text-neutral-400">No fields were answered.</p>}
+      {sections.map((section) => (
         <div key={section.title}>
           <h4 className="mb-1 text-xs font-bold uppercase tracking-wide text-orange-600 dark:text-orange-400">
             {section.title}
           </h4>
           {section.fields.map((f) => (
-            <CopyField key={f.key} label={f.question} value={fields[f.key]} />
+            <CopyField key={f.key} label={f.question} value={fields[f.key] ?? ""} path={f.key} onSave={(_p, l, v) => onSaveEntry(f.key, l, v)} />
           ))}
         </div>
       ))}

@@ -42,6 +42,17 @@ export async function editRunField(
   return data.run as SavedRun;
 }
 
+/** Renames an ad, or edits one answer of its original entry. Does not regenerate any copy. */
+export async function editRunEntry(runId: string, change: { label: string } | { entryKey: string; entryValue: string }): Promise<SavedRun | null> {
+  const res = await fetch(`/api/runs/${runId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(change),
+  });
+  if (!res.ok) return null;
+  return (await res.json()).run as SavedRun;
+}
+
 /** Places one angle of an ad into a funnel level. The same ad can be placed many times. */
 export async function placeAd(
   funnelSetId: string,
